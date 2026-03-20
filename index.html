@@ -313,7 +313,8 @@ let state = {
   division: "",
   players: [],       // [{ row, name, apodo, novedad, status }]
   dates: [],         // [{ col, date, display }]
-  selectedDate: null // { col, date, display }
+  selectedDate: null, // { col, date, display }
+  sheetName: ""
 };
 
 const STATE_CLASS = {
@@ -335,16 +336,20 @@ function showScreen(id) {
 // API CALLS
 // ══════════════════════════════════════════════════════════
 async function api(payload) {
+  const body = JSON.stringify({
+    ...payload,
+    username: state.username,
+    password: state.password
+  });
+  // Apps Script requires no-cors workaround via URL params for GET
+  // For POST we use text/plain to avoid preflight CORS issues
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...payload,
-      username: state.username,
-      password: state.password
-    })
+    headers: { "Content-Type": "text/plain" },
+    body
   });
-  return res.json();
+  const text = await res.text();
+  return JSON.parse(text);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -362,11 +367,12 @@ async function doLogin() {
   }
 
   try {
-    const data = await fetch(API_URL, {
+    const res = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action: "login", username, password })
-    }).then(r => r.json());
+    });
+    const data = JSON.parse(await res.text());
 
     if (!data.ok) { errEl.textContent = data.error; return; }
 
@@ -398,6 +404,7 @@ async function loadDatesScreen() {
     if (!data.ok) { showToast("Error: " + data.error); return; }
 
     state.dates = data.dates;
+    state.sheetName = data.sheetName;
     document.getElementById('dates-sheet-name').textContent = data.sheetName;
     renderDates(data.dates);
   } catch(e) {
@@ -573,13 +580,11 @@ async function saveAttendance() {
     .map(p => ({ row: p.row, state: p.status }));
 
   try {
-    // We need sheetName from the dates response — stored in selectedDate context
-    const sheetName = document.getElementById('dates-sheet-name').textContent;
     const data = await api({
       action: "saveAttendance",
       attendance,
       dateCol: state.selectedDate.col,
-      sheetName
+      sheetName: state.sheetName
     });
 
     if (!data.ok) {
