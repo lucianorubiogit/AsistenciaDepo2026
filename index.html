@@ -290,7 +290,7 @@
       <span class="opt-dot"></span>Ausente
     </div>
     <div class="opt opt-aviso"    onclick="setState('Ausente, aviso')">
-      <span class="opt-dot"></span>Ausente, Aviso
+      <span class="opt-dot"></span>Ausente, aviso
     </div>
   </div>
 </div>
@@ -321,7 +321,7 @@ const STATE_CLASS = {
   "Presente":          "s-presente",
   "Lesionado Presente":"s-lesionado",
   "Ausente":           "s-ausente",
-  "Ausente, Aviso":    "s-ausente-aviso"
+  "Ausente, aviso":    "s-ausente-aviso"
 };
 
 // ══════════════════════════════════════════════════════════
@@ -525,14 +525,14 @@ function updatePills() {
     else if (p.status==="Presente")           counts.presente++;
     else if (p.status==="Lesionado Presente") counts.lesionado++;
     else if (p.status==="Ausente")            counts.ausente++;
-    else if (p.status==="Ausente, Aviso")     counts.aviso++;
+    else if (p.status==="Ausente, aviso")     counts.aviso++;
   });
   const pills = document.getElementById('att-pills');
   let html = '';
   if (counts.presente)  html += `<span class="pill pill-green">${counts.presente} Presente</span>`;
   if (counts.lesionado) html += `<span class="pill pill-orange">${counts.lesionado} Lesionado Presente</span>`;
   if (counts.ausente)   html += `<span class="pill pill-red">${counts.ausente} Ausente</span>`;
-  if (counts.aviso)     html += `<span class="pill pill-blue">${counts.aviso} Ausente, Aviso</span>`;
+  if (counts.aviso)     html += `<span class="pill pill-blue">${counts.aviso} Ausente, aviso</span>`;
   if (counts.sin)       html += `<span class="pill pill-gray">${counts.sin} sin marcar</span>`;
   pills.innerHTML = html;
 }
