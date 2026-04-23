@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>ADF Rugby Infantil — Asistencia</title>
+<title>DF Rugby — Asistencia</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -36,47 +36,41 @@
     color: var(--gray-text);
   }
 
-  /* ── SCREENS ── */
   .screen { display: none; min-height: 100vh; flex-direction: column; }
   .screen.active { display: flex; }
 
-  /* ── HEADER ── */
   .header {
     background: var(--green-dark);
     padding: 16px 16px 14px;
     position: sticky; top: 0; z-index: 10;
   }
-  .header-sub { color: rgba(255,255,255,0.6); font-size: 11px; margin-bottom: 3px; }
+  .header-sub   { color: rgba(255,255,255,0.6); font-size: 11px; margin-bottom: 3px; }
   .header-title { color: #fff; font-size: 20px; font-weight: 600; }
-  .header-meta { color: var(--green-light); font-size: 12px; margin-top: 4px; }
+  .header-meta  { color: var(--green-light); font-size: 12px; margin-top: 4px; }
 
-  /* ── SUMMARY PILLS ── */
   .pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-  .pill {
-    border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600;
-  }
+  .pill  { border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
   .pill-green  { background: rgba(168,213,162,0.25); color: #c8edc4; }
   .pill-orange { background: rgba(255,183,77,0.2);   color: #ffd699; }
   .pill-red    { background: rgba(239,154,154,0.2);  color: #ffaaaa; }
   .pill-blue   { background: rgba(144,202,249,0.2);  color: #aad4f5; }
   .pill-gray   { background: rgba(255,255,255,0.1);  color: rgba(255,255,255,0.5); }
 
-  /* ── PLAYER LIST ── */
   .list { flex: 1; padding: 10px; overflow-y: auto; }
 
   .player {
     display: flex; align-items: center; gap: 12px;
     padding: 12px 14px; border-radius: 13px; margin-bottom: 7px;
     border: 1px solid var(--gray-border); background: #fff;
-    cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+    cursor: pointer; transition: transform 0.1s;
     user-select: none;
   }
   .player:active { transform: scale(0.97); }
 
-  .player.s-presente         { background: var(--green-bg);  border-color: var(--green-border); }
-  .player.s-lesionado        { background: var(--orange-bg); border-color: var(--orange-border); }
-  .player.s-ausente          { background: var(--red-bg);    border-color: var(--red-border); }
-  .player.s-ausente-aviso    { background: var(--blue-bg);   border-color: var(--blue-border); }
+  .player.s-presente      { background: var(--green-bg);  border-color: var(--green-border); }
+  .player.s-lesionado     { background: var(--orange-bg); border-color: var(--orange-border); }
+  .player.s-ausente       { background: var(--red-bg);    border-color: var(--red-border); }
+  .player.s-ausente-aviso { background: var(--blue-bg);   border-color: var(--blue-border); }
 
   .avatar {
     width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
@@ -89,9 +83,9 @@
   .player.s-ausente       .avatar { background: var(--red-dark); }
   .player.s-ausente-aviso .avatar { background: var(--blue-dark); }
 
-  .player-info { flex: 1; min-width: 0; }
-  .player-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .player-nick { font-size: 12px; color: #888; margin-top: 1px; }
+  .player-info  { flex: 1; min-width: 0; }
+  .player-name  { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-nick  { font-size: 12px; color: #888; margin-top: 1px; }
   .player.s-presente      .player-name { color: var(--green-dark); }
   .player.s-lesionado     .player-name { color: var(--orange-dark); }
   .player.s-ausente       .player-name { color: var(--red-dark); }
@@ -102,12 +96,11 @@
     white-space: nowrap; flex-shrink: 0;
     background: #eee; color: #999;
   }
-  .player.s-presente      .status-chip { background: var(--green-dark); color: #fff; }
+  .player.s-presente      .status-chip { background: var(--green-dark);  color: #fff; }
   .player.s-lesionado     .status-chip { background: var(--orange-dark); color: #fff; }
-  .player.s-ausente       .status-chip { background: var(--red-dark); color: #fff; }
-  .player.s-ausente-aviso .status-chip { background: var(--blue-dark); color: #fff; }
+  .player.s-ausente       .status-chip { background: var(--red-dark);    color: #fff; }
+  .player.s-ausente-aviso .status-chip { background: var(--blue-dark);   color: #fff; }
 
-  /* ── SAVE BAR ── */
   .save-bar {
     padding: 12px 14px; background: #fff; border-top: 1px solid var(--gray-border);
     position: sticky; bottom: 0;
@@ -117,11 +110,10 @@
     border: none; border-radius: 13px; font-size: 16px; font-weight: 600;
     cursor: pointer; transition: background 0.2s;
   }
-  .save-btn:active { background: var(--green-mid); }
+  .save-btn:active   { background: var(--green-mid); }
   .save-btn:disabled { background: #aaa; cursor: default; }
   .save-hint { text-align: center; font-size: 11px; color: #aaa; margin-top: 7px; }
 
-  /* ── MODAL ── */
   .modal-bg {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
     z-index: 100; align-items: flex-end; justify-content: center;
@@ -131,7 +123,7 @@
     background: #fff; border-radius: 20px 20px 0 0; padding: 20px 16px 32px;
     width: 100%; max-width: 480px;
   }
-  .modal-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
+  .modal-handle      { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
   .modal-player-name { font-size: 15px; font-weight: 600; color: var(--green-dark); margin-bottom: 3px; }
   .modal-player-nick { font-size: 12px; color: #aaa; margin-bottom: 16px; }
 
@@ -142,14 +134,13 @@
     cursor: pointer; transition: background 0.1s;
     font-size: 15px; font-weight: 500;
   }
-  .opt:active { background: #f5f5f5; }
-  .opt-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-  .opt-present    .opt-dot { background: var(--green-dark); }
-  .opt-lesion     .opt-dot { background: var(--orange-dark); }
-  .opt-ausente    .opt-dot { background: var(--red-dark); }
-  .opt-aviso      .opt-dot { background: var(--blue-dark); }
+  .opt:active  { background: #f5f5f5; }
+  .opt-dot     { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .opt-present .opt-dot { background: var(--green-dark); }
+  .opt-lesion  .opt-dot { background: var(--orange-dark); }
+  .opt-ausente .opt-dot { background: var(--red-dark); }
+  .opt-aviso   .opt-dot { background: var(--blue-dark); }
 
-  /* ── LOGIN SCREEN ── */
   #screen-login {
     background: var(--green-dark);
     justify-content: center; align-items: center; padding: 24px;
@@ -159,10 +150,9 @@
     background: rgba(255,255,255,0.15); display: flex; align-items: center;
     justify-content: center; margin: 0 auto 16px;
   }
-  .login-logo svg { opacity: 0.9; }
   .login-title { color: #fff; font-size: 26px; font-weight: 700; text-align: center; }
-  .login-sub { color: var(--green-light); font-size: 14px; text-align: center; margin-top: 6px; margin-bottom: 36px; }
-  .login-card {
+  .login-sub   { color: var(--green-light); font-size: 14px; text-align: center; margin-top: 6px; margin-bottom: 36px; }
+  .login-card  {
     background: #fff; border-radius: 18px; padding: 24px;
     width: 100%; max-width: 360px;
   }
@@ -180,7 +170,6 @@
   }
   .login-error { color: #e53935; font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
 
-  /* ── DATE PICKER SCREEN ── */
   #screen-dates { background: #f0f2f0; }
   .date-list { padding: 12px; flex: 1; overflow-y: auto; }
   .date-card {
@@ -189,12 +178,11 @@
     cursor: pointer; transition: all 0.1s;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .date-card:active { background: var(--green-bg); border-color: var(--green-border); }
-  .date-card-label { font-size: 17px; font-weight: 500; color: var(--gray-text); }
-  .date-card-sub { font-size: 12px; color: #aaa; margin-top: 3px; }
-  .date-arrow { color: #ccc; font-size: 20px; }
+  .date-card:active  { background: var(--green-bg); border-color: var(--green-border); }
+  .date-card-label   { font-size: 17px; font-weight: 500; color: var(--gray-text); }
+  .date-card-sub     { font-size: 12px; color: #aaa; margin-top: 3px; }
+  .date-arrow        { color: #ccc; font-size: 20px; }
 
-  /* ── TOAST ── */
   .toast {
     position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
     background: #323232; color: #fff; padding: 12px 20px; border-radius: 10px;
@@ -203,7 +191,6 @@
   }
   .toast.show { opacity: 1; }
 
-  /* ── LOADING ── */
   .loading {
     display: flex; align-items: center; justify-content: center;
     flex: 1; flex-direction: column; gap: 12px; color: #aaa;
@@ -218,7 +205,7 @@
 </head>
 <body>
 
-<!-- ══════════════════ LOGIN ══════════════════ -->
+<!-- LOGIN -->
 <div id="screen-login" class="screen active">
   <div style="width:100%;max-width:360px">
     <div class="login-logo">
@@ -227,7 +214,7 @@
         <path d="M4 34c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
       </svg>
     </div>
-    <div class="login-title">ADF Rugby Infantil</div>
+    <div class="login-title">DF Rugby</div>
     <div class="login-sub">Sistema de Asistencia</div>
     <div class="login-card">
       <div class="login-label">Usuario</div>
@@ -242,7 +229,7 @@
   </div>
 </div>
 
-<!-- ══════════════════ DATE PICKER ══════════════════ -->
+<!-- DATE PICKER -->
 <div id="screen-dates" class="screen">
   <div class="header">
     <div class="header-sub" id="dates-division">M13</div>
@@ -256,7 +243,7 @@
   <div id="date-list" class="date-list" style="display:none"></div>
 </div>
 
-<!-- ══════════════════ ATTENDANCE ══════════════════ -->
+<!-- ATTENDANCE -->
 <div id="screen-attendance" class="screen">
   <div class="header">
     <div class="header-sub" id="att-date-label"></div>
@@ -274,54 +261,53 @@
   </div>
 </div>
 
-<!-- ══════════════════ MODAL ══════════════════ -->
+<!-- MODAL -->
 <div class="modal-bg" id="modal" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-player-name" id="modal-name"></div>
     <div class="modal-player-nick" id="modal-nick"></div>
-    <div class="opt opt-present"  onclick="setState('Presente')">
+    <div class="opt opt-present" onclick="setState('Presente')">
       <span class="opt-dot"></span>Presente
     </div>
-    <div class="opt opt-lesion"   onclick="setState('Lesionado Presente')">
+    <div class="opt opt-lesion" onclick="setState('Lesionado Presente')">
       <span class="opt-dot"></span>Lesionado Presente
     </div>
-    <div class="opt opt-ausente"  onclick="setState('Ausente')">
+    <div class="opt opt-ausente" onclick="setState('Ausente')">
       <span class="opt-dot"></span>Ausente
     </div>
-    <div class="opt opt-aviso"    onclick="setState('Ausente, aviso')">
-      <span class="opt-dot"></span>Ausente, aviso
+    <div class="opt opt-aviso" onclick="setState('Ausente, Aviso')">
+      <span class="opt-dot"></span>Ausente, Aviso
     </div>
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
 // ══════════════════════════════════════════════════════════
-// CONFIGURACIÓN — reemplazá la URL con tu Apps Script URL
+// CONFIGURACIÓN — reemplazá con tu URL de Apps Script
 // ══════════════════════════════════════════════════════════
-const API_URL = "https://script.google.com/macros/s/AKfycbw7gipOJiVq3oDTEBdFoM2L_OVeBAguBBOM1KRKgmZZ-1-qKjRk_bLb3x08U0Kw2KQotQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby1FVsSuT8qXJoyCbgP6-29UwyNLHbgaVTgs0B0N-0zxi-vHRiSxcdTSxGwSZ78PVMS/exec";
 
 // ══════════════════════════════════════════════════════════
 // ESTADO GLOBAL
 // ══════════════════════════════════════════════════════════
 let state = {
-  username: "",
-  password: "",
-  division: "",
-  players: [],       // [{ row, name, apodo, novedad, status }]
-  dates: [],         // [{ col, date, display }]
-  selectedDate: null, // { col, date, display }
-  sheetName: ""
+  username:     "",
+  password:     "",
+  division:     "",
+  players:      [],
+  dates:        [],
+  selectedDate: null,
+  sheetName:    ""
 };
 
 const STATE_CLASS = {
-  "Presente":          "s-presente",
-  "Lesionado Presente":"s-lesionado",
-  "Ausente":           "s-ausente",
-  "Ausente, aviso":    "s-ausente-aviso"
+  "Presente":           "s-presente",
+  "Lesionado Presente": "s-lesionado",
+  "Ausente":            "s-ausente",
+  "Ausente, Aviso":     "s-ausente-aviso"
 };
 
 // ══════════════════════════════════════════════════════════
@@ -333,7 +319,7 @@ function showScreen(id) {
 }
 
 // ══════════════════════════════════════════════════════════
-// API CALLS
+// API — usa text/plain para evitar CORS preflight
 // ══════════════════════════════════════════════════════════
 async function api(payload) {
   const body = JSON.stringify({
@@ -341,10 +327,8 @@ async function api(payload) {
     username: state.username,
     password: state.password
   });
-  // Apps Script requires no-cors workaround via URL params for GET
-  // For POST we use text/plain to avoid preflight CORS issues
   const res = await fetch(API_URL, {
-    method: "POST",
+    method:  "POST",
     headers: { "Content-Type": "text/plain" },
     body
   });
@@ -358,7 +342,7 @@ async function api(payload) {
 async function doLogin() {
   const username = document.getElementById('login-user').value.trim().toLowerCase();
   const password = document.getElementById('login-pass').value.trim();
-  const errEl = document.getElementById('login-error');
+  const errEl    = document.getElementById('login-error');
   errEl.textContent = "";
 
   if (!username || !password) {
@@ -368,7 +352,7 @@ async function doLogin() {
 
   try {
     const res = await fetch(API_URL, {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action: "login", username, password })
     });
@@ -385,7 +369,6 @@ async function doLogin() {
   }
 }
 
-// Enter key on login
 document.getElementById('login-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
@@ -397,13 +380,13 @@ async function loadDatesScreen() {
   showScreen('dates');
   document.getElementById('dates-division').textContent = state.division;
   document.getElementById('dates-loading').style.display = 'flex';
-  document.getElementById('date-list').style.display = 'none';
+  document.getElementById('date-list').style.display    = 'none';
 
   try {
     const data = await api({ action: "getDates" });
     if (!data.ok) { showToast("Error: " + data.error); return; }
 
-    state.dates = data.dates;
+    state.dates     = data.dates;
     state.sheetName = data.sheetName;
     document.getElementById('dates-sheet-name').textContent = data.sheetName;
     renderDates(data.dates);
@@ -412,7 +395,7 @@ async function loadDatesScreen() {
   }
 }
 
-const DAYS_ES = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const DAYS_ES   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 function renderDates(dates) {
@@ -429,21 +412,19 @@ function renderDates(dates) {
   dates.forEach(d => {
     const el = document.createElement('div');
     el.className = 'date-card';
-
     let label = d.display;
-    let sub = '';
+    let sub   = '';
     if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const dt = new Date(d.date + 'T12:00:00');
-      label = `${DAYS_ES[dt.getDay()]} ${dt.getDate()} de ${MONTHS_ES[dt.getMonth()]}`;
-      sub = d.display;
+      label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
+      sub   = d.display;
     }
-
-    el.innerHTML = `
-      <div>
-        <div class="date-card-label">${label}</div>
-        ${sub ? `<div class="date-card-sub">${sub}</div>` : ''}
-      </div>
-      <div class="date-arrow">›</div>`;
+    el.innerHTML =
+      '<div>' +
+        '<div class="date-card-label">' + label + '</div>' +
+        (sub ? '<div class="date-card-sub">' + sub + '</div>' : '') +
+      '</div>' +
+      '<div class="date-arrow">›</div>';
     el.onclick = () => selectDate(d);
     list.appendChild(el);
   });
@@ -459,15 +440,15 @@ async function selectDate(dateObj) {
 // ══════════════════════════════════════════════════════════
 async function loadAttendanceScreen() {
   showScreen('attendance');
-  document.getElementById('att-loading').style.display = 'flex';
-  document.getElementById('player-list').style.display = 'none';
-  document.getElementById('save-bar').style.display = 'none';
+  document.getElementById('att-loading').style.display    = 'flex';
+  document.getElementById('player-list').style.display    = 'none';
+  document.getElementById('save-bar').style.display       = 'none';
 
   const d = state.selectedDate;
   let label = d.display;
   if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
     const dt = new Date(d.date + 'T12:00:00');
-    label = `${DAYS_ES[dt.getDay()]} ${dt.getDate()} de ${MONTHS_ES[dt.getMonth()]}`;
+    label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
   }
   document.getElementById('att-date-label').textContent = label;
 
@@ -495,13 +476,13 @@ function renderPlayers() {
     el.className = 'player';
     el.id = 'player-' + idx;
     el.onclick = () => openModal(idx);
-    el.innerHTML = `
-      <div class="avatar">${initials}</div>
-      <div class="player-info">
-        <div class="player-name">${p.name}</div>
-        <div class="player-nick">${p.apodo ? '"' + p.apodo + '"' : (p.novedad || '&nbsp;')}</div>
-      </div>
-      <div class="status-chip">Sin marcar</div>`;
+    el.innerHTML =
+      '<div class="avatar">' + initials + '</div>' +
+      '<div class="player-info">' +
+        '<div class="player-name">' + p.name + '</div>' +
+        '<div class="player-nick">' + (p.apodo ? '"' + p.apodo + '"' : (p.novedad || '&nbsp;')) + '</div>' +
+      '</div>' +
+      '<div class="status-chip">Sin marcar</div>';
     list.appendChild(el);
   });
 
@@ -509,32 +490,30 @@ function renderPlayers() {
 }
 
 function updatePlayerEl(idx) {
-  const p = state.players[idx];
+  const p  = state.players[idx];
   const el = document.getElementById('player-' + idx);
   if (!el) return;
-
   el.className = 'player' + (p.status ? ' ' + STATE_CLASS[p.status] : '');
   el.querySelector('.status-chip').textContent = p.status || 'Sin marcar';
   updatePills();
 }
 
 function updatePills() {
-  const counts = { presente:0, lesionado:0, ausente:0, aviso:0, sin:0 };
+  const c = { presente:0, lesionado:0, ausente:0, aviso:0, sin:0 };
   state.players.forEach(p => {
-    if (!p.status)                    counts.sin++;
-    else if (p.status==="Presente")           counts.presente++;
-    else if (p.status==="Lesionado Presente") counts.lesionado++;
-    else if (p.status==="Ausente")            counts.ausente++;
-    else if (p.status==="Ausente, aviso")     counts.aviso++;
+    if      (!p.status)                         c.sin++;
+    else if (p.status === "Presente")           c.presente++;
+    else if (p.status === "Lesionado Presente") c.lesionado++;
+    else if (p.status === "Ausente")            c.ausente++;
+    else if (p.status === "Ausente, Aviso")     c.aviso++;
   });
-  const pills = document.getElementById('att-pills');
   let html = '';
-  if (counts.presente)  html += `<span class="pill pill-green">${counts.presente} Presente</span>`;
-  if (counts.lesionado) html += `<span class="pill pill-orange">${counts.lesionado} Lesionado Presente</span>`;
-  if (counts.ausente)   html += `<span class="pill pill-red">${counts.ausente} Ausente</span>`;
-  if (counts.aviso)     html += `<span class="pill pill-blue">${counts.aviso} Ausente, aviso</span>`;
-  if (counts.sin)       html += `<span class="pill pill-gray">${counts.sin} sin marcar</span>`;
-  pills.innerHTML = html;
+  if (c.presente)  html += '<span class="pill pill-green">'  + c.presente  + ' Presente</span>';
+  if (c.lesionado) html += '<span class="pill pill-orange">' + c.lesionado + ' Lesionado Presente</span>';
+  if (c.ausente)   html += '<span class="pill pill-red">'    + c.ausente   + ' Ausente</span>';
+  if (c.aviso)     html += '<span class="pill pill-blue">'   + c.aviso     + ' Ausente, Aviso</span>';
+  if (c.sin)       html += '<span class="pill pill-gray">'   + c.sin       + ' sin marcar</span>';
+  document.getElementById('att-pills').innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -572,7 +551,7 @@ async function saveAttendance() {
   }
 
   const btn = document.getElementById('save-btn');
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = "Guardando…";
 
   const attendance = state.players
@@ -581,32 +560,32 @@ async function saveAttendance() {
 
   try {
     const data = await api({
-      action: "saveAttendance",
+      action:     "saveAttendance",
       attendance,
-      dateCol: state.selectedDate.col,
-      sheetName: state.sheetName
+      dateCol:    state.selectedDate.col,
+      sheetName:  state.sheetName
     });
 
     if (!data.ok) {
       showToast("Error al guardar: " + data.error);
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = "Guardar asistencia";
       return;
     }
 
-    btn.textContent = "✓ Guardado en Google Sheets";
+    btn.textContent    = "✓ Guardado en Google Sheets";
     btn.style.background = "#2e7d32";
-    showToast(`${data.saved} registros guardados`);
+    showToast(data.saved + " registros guardados");
 
     setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = "Guardar asistencia";
+      btn.disabled         = false;
+      btn.textContent      = "Guardar asistencia";
       btn.style.background = "";
     }, 3000);
 
   } catch(e) {
     showToast("Error de conexión al guardar");
-    btn.disabled = false;
+    btn.disabled    = false;
     btn.textContent = "Guardar asistencia";
   }
 }
