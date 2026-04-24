@@ -288,8 +288,8 @@
     <div class="opt opt-ausente" onclick="setState('Ausente')">
       <span class="opt-dot"></span>Ausente
     </div>
-    <div class="opt opt-aviso" onclick="setState('Ausente, Aviso')">
-      <span class="opt-dot"></span>Ausente, Aviso
+    <div class="opt opt-aviso" onclick="setState('Ausente, aviso')">
+      <span class="opt-dot"></span>Ausente, aviso
     </div>
   </div>
 </div>
@@ -297,7 +297,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzMB87-WCbqyGSIfMKfxAfDYvd_dlsSanKNm4MrAn4BbvtASg3Wkb9mhDr5-c2OXzSsAA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwMf0zf-JT6JaE-l-M6xcNZBtWLpeYChbhjI7eoE6GcrFCcZGWSt-Jgcsc8JuEOXjCxGg/exec";
 
 let state = {
   username:     "",
@@ -313,7 +313,7 @@ const STATE_CLASS = {
   "Presente":           "s-presente",
   "Lesionado Presente": "s-lesionado",
   "Ausente":            "s-ausente",
-  "Ausente, Aviso":     "s-ausente-aviso"
+  "Ausente, aviso":     "s-ausente-aviso"
 };
 
 function showScreen(id) {
@@ -543,13 +543,13 @@ function updatePills() {
     else if (p.status === "Presente")           c.presente++;
     else if (p.status === "Lesionado Presente") c.lesionado++;
     else if (p.status === "Ausente")            c.ausente++;
-    else if (p.status === "Ausente, Aviso")     c.aviso++;
+    else if (p.status === "Ausente, aviso")     c.aviso++;
   });
   let html = '';
   if (c.presente)  html += '<span class="pill pill-green">'  + c.presente  + ' Presente</span>';
   if (c.lesionado) html += '<span class="pill pill-orange">' + c.lesionado + ' Lesionado Presente</span>';
   if (c.ausente)   html += '<span class="pill pill-red">'    + c.ausente   + ' Ausente</span>';
-  if (c.aviso)     html += '<span class="pill pill-blue">'   + c.aviso     + ' Ausente, Aviso</span>';
+  if (c.aviso)     html += '<span class="pill pill-blue">'   + c.aviso     + ' Ausente, aviso</span>';
   if (c.sin)       html += '<span class="pill pill-gray">'   + c.sin       + ' sin marcar</span>';
   document.getElementById('att-pills').innerHTML = html;
 }
