@@ -11,6 +11,7 @@
 
   :root {
     --green-dark:   #002395;
+    --present-color: #1a472a;
     --green-mid:    #001a6e;
     --green-light:  #a8b8f0;
     --green-bg:     #f0f2ff;
@@ -66,7 +67,7 @@
   }
   .player:active { transform: scale(0.97); }
 
-  .player.s-presente      { background: var(--green-bg);  border-color: var(--green-border); }
+  .player.s-presente      { background: #f1f8f1;  border-color: #81c784; }
   .player.s-lesionado     { background: var(--orange-bg); border-color: var(--orange-border); }
   .player.s-ausente       { background: var(--red-bg);    border-color: var(--red-border); }
   .player.s-ausente-aviso { background: var(--blue-bg);   border-color: var(--blue-border); }
@@ -77,7 +78,7 @@
     font-size: 13px; font-weight: 600; background: #ccc; color: #fff;
     transition: background 0.2s;
   }
-  .player.s-presente      .avatar { background: var(--green-dark); }
+  .player.s-presente      .avatar { background: #1a472a; }
   .player.s-lesionado     .avatar { background: var(--orange-dark); }
   .player.s-ausente       .avatar { background: var(--red-dark); }
   .player.s-ausente-aviso .avatar { background: var(--blue-dark); }
@@ -85,7 +86,7 @@
   .player-info { flex: 1; min-width: 0; }
   .player-name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .player-nick { font-size: 12px; color: #888; margin-top: 1px; }
-  .player.s-presente      .player-name { color: var(--green-dark); }
+  .player.s-presente      .player-name { color: #1a472a; }
   .player.s-lesionado     .player-name { color: var(--orange-dark); }
   .player.s-ausente       .player-name { color: var(--red-dark); }
   .player.s-ausente-aviso .player-name { color: var(--blue-dark); }
@@ -95,7 +96,7 @@
     white-space: nowrap; flex-shrink: 0;
     background: #eee; color: #999;
   }
-  .player.s-presente      .status-chip { background: var(--green-dark);  color: #fff; }
+  .player.s-presente      .status-chip { background: #1a472a;  color: #fff; }
   .player.s-lesionado     .status-chip { background: var(--orange-dark); color: #fff; }
   .player.s-ausente       .status-chip { background: var(--red-dark);    color: #fff; }
   .player.s-ausente-aviso .status-chip { background: var(--blue-dark);   color: #fff; }
