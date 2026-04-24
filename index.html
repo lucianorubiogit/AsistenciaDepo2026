@@ -327,12 +327,15 @@ async function api(payload) {
     username: state.username,
     password: state.password
   });
+  console.log("API call →", payload.action, "| body:", body);
   const res  = await fetch(API_URL, {
     method:  "POST",
     headers: { "Content-Type": "text/plain" },
     body
   });
-  return JSON.parse(await res.text());
+  const text = await res.text();
+  console.log("API response ←", payload.action, "| raw:", text);
+  return JSON.parse(text);
 }
 
 // ── LOGIN ──────────────────────────────────────────────────
@@ -468,6 +471,9 @@ async function loadAttendanceScreen() {
     });
     if (!data.ok) { showToast("Error: " + data.error); return; }
 
+    console.log("Jugadores recibidos:", data.players.length);
+    console.log("Primeros 3:", JSON.stringify(data.players.slice(0,3)));
+
     // El servidor ya manda el status pre-cargado (o null si está vacío)
     state.players = data.players;
     renderPlayers();
@@ -573,13 +579,22 @@ async function saveAttendance() {
     .filter(p => p.status)
     .map(p => ({ row: p.row, state: p.status }));
 
+  console.log("=== GUARDANDO ===");
+  console.log("sheetName:", state.sheetName);
+  console.log("dateCol:", state.selectedDate ? state.selectedDate.col : "NULL");
+  console.log("attendance:", JSON.stringify(attendance));
+
   try {
-    const data = await api({
+    const payload = {
       action:    "saveAttendance",
       attendance,
       dateCol:   state.selectedDate.col,
       sheetName: state.sheetName
-    });
+    };
+    console.log("payload completo:", JSON.stringify(payload));
+
+    const data = await api(payload);
+    console.log("respuesta del servidor:", JSON.stringify(data));
 
     if (!data.ok) {
       showToast("Error al guardar: " + data.error);
