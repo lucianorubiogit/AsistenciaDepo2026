@@ -297,7 +297,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzoGzO5d6lT-00JU_Ql1GDK9lHNhnG1Yv8bFOowsA_PsidaxLwbdPOpLM3kX6APGF1O/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzMB87-WCbqyGSIfMKfxAfDYvd_dlsSanKNm4MrAn4BbvtASg3Wkb9mhDr5-c2OXzSsAA/exec";
 
 let state = {
   username:     "",
@@ -413,15 +413,22 @@ function renderDates(dates) {
     let sub   = '';
     let badge = '';
 
+    // Intentar parsear la fecha en cualquier formato
+    let dt = null;
     if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const dt = new Date(d.date + 'T12:00:00');
-      label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
-      sub   = d.display;
+      dt = new Date(d.date + 'T12:00:00');
+    } else if (d.date) {
+      // Formato largo de JS Date string
+      const parsed = new Date(d.date);
+      if (!isNaN(parsed.getTime())) dt = parsed;
+    }
 
-      // Indicar si es futura
+    if (dt) {
+      label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
+      sub   = dt.getDate() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
       if (dt > today) {
         badge = '<span style="font-size:10px;font-weight:600;color:#1565c0;background:#f0f7ff;padding:2px 8px;border-radius:10px;margin-left:8px">próxima</span>';
-      } else if (dt.getTime() === today.getTime()) {
+      } else if (dt.toDateString() === today.toDateString()) {
         badge = '<span style="font-size:10px;font-weight:600;color:#1a472a;background:#e8f5e9;padding:2px 8px;border-radius:10px;margin-left:8px">hoy</span>';
       }
     }
@@ -456,9 +463,15 @@ async function loadAttendanceScreen() {
 
   const d = state.selectedDate;
   let label = d.display;
+  let dtParsed = null;
   if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    const dt = new Date(d.date + 'T12:00:00');
-    label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
+    dtParsed = new Date(d.date + 'T12:00:00');
+  } else if (d.date) {
+    const p = new Date(d.date);
+    if (!isNaN(p.getTime())) dtParsed = p;
+  }
+  if (dtParsed) {
+    label = DAYS_ES[dtParsed.getDay()] + ' ' + dtParsed.getDate() + ' de ' + MONTHS_ES[dtParsed.getMonth()];
   }
   document.getElementById('att-date-label').textContent = label;
 
