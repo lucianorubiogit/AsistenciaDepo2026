@@ -183,6 +183,17 @@
   .login-error { color: #e53935; font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
 
   #screen-dates { background: #f0f2f0; }
+  .date-list { padding: 12px; flex: 1; overflow-y: auto; }
+  .date-card {
+    background: #fff; border-radius: 13px; padding: 18px 16px;
+    margin-bottom: 8px; border: 1px solid var(--gray-border);
+    cursor: pointer; transition: all 0.1s;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .date-card:active  { background: var(--green-bg); border-color: var(--green-border); }
+  .date-card-label   { font-size: 17px; font-weight: 500; color: var(--gray-text); }
+  .date-card-sub     { font-size: 12px; color: #aaa; margin-top: 3px; }
+  .date-arrow        { color: #ccc; font-size: 20px; }
 
   .toast {
     position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
@@ -238,40 +249,7 @@
     <div class="spinner"></div>
     <span>Cargando fechas…</span>
   </div>
-  <div id="calendar-wrapper" style="display:none;flex:1;padding:12px;overflow-y:auto">
-    <div style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--gray-border)">
-      <!-- Calendar nav -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--green-dark)">
-        <button id="cal-prev" onclick="calNav(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">‹</button>
-        <span id="cal-title" style="color:#fff;font-size:16px;font-weight:600"></span>
-        <button id="cal-next" onclick="calNav(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">›</button>
-      </div>
-      <!-- Day headers -->
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f8f8f8;border-bottom:1px solid var(--gray-border)">
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Dom</div>
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Lun</div>
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Mar</div>
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Mié</div>
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Jue</div>
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Vie</div>
-        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Sáb</div>
-      </div>
-      <!-- Calendar grid -->
-      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);padding:8px"></div>
-    </div>
-    <!-- Legend -->
-    <div style="display:flex;gap:16px;justify-content:center;margin-top:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666">
-        <div style="width:14px;height:14px;border-radius:50%;background:var(--green-dark)"></div>Fecha disponible
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666">
-        <div style="width:14px;height:14px;border-radius:50%;background:#e8eaff;border:2px solid var(--green-dark)"></div>Hoy
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666">
-        <div style="width:14px;height:14px;border-radius:50%;background:#eee"></div>Sin actividad
-      </div>
-    </div>
-  </div>
+  <div id="date-list" class="date-list" style="display:none"></div>
 </div>
 
 <!-- ATTENDANCE -->
@@ -316,7 +294,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbytJ9CYQwqidbW58KMMhbUM8qeq9Lf184jWiVlv6FDJd9WPaEEB3lpmWs44XG0wdC9q2A/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby_cgbX9MU5bOt2zrsiJP7GH36uyIEXqn4jZ_-1zT_I8579KoTX760U3UDGe-VwDu8PRg/exec";
 
 let state = {
   username:     "",
@@ -324,9 +302,8 @@ let state = {
   division:     "",
   players:      [],
   dates:        [],
-  selectedDate:    null,
-  sheetName:       "",
-  availableDates:  {}
+  selectedDate: null,
+  sheetName:    ""
 };
 
 const STATE_CLASS = {
@@ -347,14 +324,12 @@ async function api(payload) {
     username: state.username,
     password: state.password
   });
-  console.log("API call →", payload.action, "| body:", body);
   const res  = await fetch(API_URL, {
     method:  "POST",
     headers: { "Content-Type": "text/plain" },
     body
   });
   const text = await res.text();
-  console.log("API response ←", payload.action, "| raw:", text);
   return JSON.parse(text);
 }
 
@@ -410,11 +385,6 @@ async function loadDatesScreen() {
 
 const DAYS_ES   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-const MONTHS_LONG = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-
-// Calendar state
-let calYear  = new Date().getFullYear();
-let calMonth = new Date().getMonth(); // 0-indexed
 
 function parseDateFromServer(d) {
   if (!d) return null;
@@ -426,100 +396,52 @@ function parseDateFromServer(d) {
 }
 
 function renderDates(dates) {
-  document.getElementById('dates-loading').style.display  = 'none';
-  document.getElementById('calendar-wrapper').style.display = 'block';
+  document.getElementById('dates-loading').style.display = 'none';
+  const list = document.getElementById('date-list');
+  list.style.display = 'block';
+  list.innerHTML = '';
 
   if (dates.length === 0) {
-    document.getElementById('cal-grid').innerHTML =
-      '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa">No hay fechas cargadas</div>';
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa">No hay fechas cargadas en este mes</div>';
     return;
   }
 
-  // Build a Set of available date strings "YYYY-MM-DD"
-  state.availableDates = {};
-  dates.forEach(d => {
-    const dt = parseDateFromServer(d.date);
-    if (dt) {
-      const key = dt.getFullYear() + '-' +
-                  String(dt.getMonth()+1).padStart(2,'0') + '-' +
-                  String(dt.getDate()).padStart(2,'0');
-      state.availableDates[key] = d; // map key → full date object
-    }
-  });
-
-  // Navigate calendar to the month that has dates
-  const firstDate = parseDateFromServer(dates[0].date);
-  if (firstDate) {
-    calYear  = firstDate.getFullYear();
-    calMonth = firstDate.getMonth();
-  }
-
-  renderCalendar();
-}
-
-function calNav(dir) {
-  calMonth += dir;
-  if (calMonth > 11) { calMonth = 0;  calYear++; }
-  if (calMonth < 0)  { calMonth = 11; calYear--; }
-  renderCalendar();
-}
-
-function renderCalendar() {
-  document.getElementById('cal-title').textContent = MONTHS_LONG[calMonth] + ' ' + calYear;
-
-  const grid  = document.getElementById('cal-grid');
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  // First day of month
-  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  dates.forEach(d => {
+    const el  = document.createElement('div');
+    el.className = 'date-card';
 
-  let html = '';
+    let label = d.display;
+    let sub   = '';
+    let badge = '';
+    const dt  = parseDateFromServer(d.date);
 
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    html += '<div style="padding:4px"></div>';
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const key = calYear + '-' +
-                String(calMonth+1).padStart(2,'0') + '-' +
-                String(day).padStart(2,'0');
-    const dt  = new Date(calYear, calMonth, day);
-    const isToday     = dt.toDateString() === today.toDateString();
-    const isAvailable = !!state.availableDates[key];
-    const isFuture    = dt > today;
-
-    let cellStyle = 'width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:3px auto;font-size:13px;font-weight:500;';
-    let onclick   = '';
-
-    if (isAvailable) {
-      if (isToday) {
-        cellStyle += 'background:var(--green-dark);color:#fff;border:3px solid #7b8fd4;cursor:pointer;font-weight:700;';
-      } else if (isFuture) {
-        cellStyle += 'background:var(--green-dark);color:#fff;opacity:0.65;cursor:pointer;';
-      } else {
-        cellStyle += 'background:var(--green-dark);color:#fff;cursor:pointer;';
+    if (dt) {
+      label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
+      sub   = dt.getDate() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
+      if (dt > today) {
+        badge = '<span style="font-size:10px;font-weight:600;color:#1565c0;background:#f0f7ff;padding:2px 8px;border-radius:10px;margin-left:8px">próxima</span>';
+      } else if (dt.toDateString() === today.toDateString()) {
+        badge = '<span style="font-size:10px;font-weight:600;color:#fff;background:var(--green-dark);padding:2px 8px;border-radius:10px;margin-left:8px">hoy</span>';
       }
-      onclick = `onclick="selectDate('${key}')"`;
-    } else if (isToday) {
-      cellStyle += 'background:#e8eaff;color:var(--green-dark);border:2px solid var(--green-dark);font-weight:700;';
-    } else {
-      cellStyle += 'color:#ccc;';
     }
 
-    html += `<div style="text-align:center;padding:2px 0">
-      <div style="${cellStyle}" ${onclick}>${day}</div>
-    </div>`;
-  }
-
-  grid.innerHTML = html;
+    el.innerHTML =
+      '<div style="display:flex;align-items:center">' +
+        '<div>' +
+          '<div class="date-card-label">' + label + badge + '</div>' +
+          (sub ? '<div class="date-card-sub">' + sub + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="date-arrow">›</div>';
+    el.onclick = () => selectDate(d);
+    list.appendChild(el);
+  });
 }
 
-async function selectDate(key) {
-  const dateObj = state.availableDates[key];
-  if (!dateObj) return;
+async function selectDate(dateObj) {
   state.selectedDate = dateObj;
   await loadAttendanceScreen();
 }
@@ -557,8 +479,6 @@ async function loadAttendanceScreen() {
     });
     if (!data.ok) { showToast("Error: " + data.error); return; }
 
-    console.log("Jugadores recibidos:", data.players.length);
-    console.log("Primeros 3:", JSON.stringify(data.players.slice(0,3)));
 
     // El servidor ya manda el status pre-cargado (o null si está vacío)
     state.players = data.players;
@@ -665,10 +585,8 @@ async function saveAttendance() {
     .filter(p => p.status)
     .map(p => ({ row: p.row, state: p.status }));
 
-  console.log("=== GUARDANDO ===");
-  console.log("sheetName:", state.sheetName);
-  console.log("dateCol:", state.selectedDate ? state.selectedDate.col : "NULL");
-  console.log("attendance:", JSON.stringify(attendance));
+
+
 
   try {
     const payload = {
@@ -677,10 +595,8 @@ async function saveAttendance() {
       dateCol:   state.selectedDate.col,
       sheetName: state.sheetName
     };
-    console.log("payload completo:", JSON.stringify(payload));
 
     const data = await api(payload);
-    console.log("respuesta del servidor:", JSON.stringify(data));
 
     if (!data.ok) {
       showToast("Error al guardar: " + data.error);
@@ -703,7 +619,7 @@ async function saveAttendance() {
       // Recargar jugadores desde el servidor con los datos ya guardados
       try {
         const fresh = await api({
-          action:    "getPlayers",
+          action:    "getPlayersForDate",
           dateCol:   state.selectedDate.col,
           sheetName: state.sheetName
         });
