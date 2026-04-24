@@ -443,10 +443,13 @@ async function selectDate(dateObj) {
 
 // ── ATTENDANCE ─────────────────────────────────────────────
 async function loadAttendanceScreen() {
+  // Reset completo antes de cargar
+  state.players = [];
   showScreen('attendance');
   document.getElementById('att-loading').style.display = 'flex';
   document.getElementById('player-list').style.display = 'none';
   document.getElementById('save-bar').style.display    = 'none';
+  document.getElementById('att-pills').innerHTML       = '';
 
   const d = state.selectedDate;
   let label = d.display;
@@ -589,11 +592,26 @@ async function saveAttendance() {
     btn.style.background = "#2e7d32";
     showToast(data.saved + " registros guardados");
 
-    setTimeout(() => {
+    // Re-sincronizar desde el servidor para que la próxima
+    // vez que se guarde en la misma sesión, los datos sean correctos
+    setTimeout(async () => {
       btn.disabled         = false;
       btn.textContent      = "Guardar asistencia";
       btn.style.background = "";
-    }, 3000);
+
+      // Recargar jugadores desde el servidor con los datos ya guardados
+      try {
+        const fresh = await api({
+          action:    "getPlayers",
+          dateCol:   state.selectedDate.col,
+          sheetName: state.sheetName
+        });
+        if (fresh.ok) {
+          state.players = fresh.players;
+          renderPlayers();
+        }
+      } catch(e) { /* si falla la recarga, no importa */ }
+    }, 2000);
 
   } catch(e) {
     showToast("Error de conexión al guardar");
