@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>DF Rugby — Asistencia</title>
+<title>Asistencia Infantiles ADF</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   :root {
-    --green-dark:   #1a472a;
-    --green-mid:    #2d6a4f;
-    --green-light:  #a8d5a2;
-    --green-bg:     #f1f8f1;
-    --green-border: #81c784;
+    --green-dark:   #002395;
+    --green-mid:    #001a6e;
+    --green-light:  #a8b8f0;
+    --green-bg:     #f0f2ff;
+    --green-border: #7b8fd4;
     --orange-dark:  #e65100;
     --orange-bg:    #fff8f0;
     --orange-border:#ffb74d;
@@ -154,7 +154,7 @@
   .opt-aviso   .opt-dot { background: var(--blue-dark); }
 
   #screen-login {
-    background: var(--green-dark);
+    background: #002395;
     justify-content: center; align-items: center; padding: 24px;
   }
   .login-logo {
@@ -183,17 +183,6 @@
   .login-error { color: #e53935; font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
 
   #screen-dates { background: #f0f2f0; }
-  .date-list { padding: 12px; flex: 1; overflow-y: auto; }
-  .date-card {
-    background: #fff; border-radius: 13px; padding: 18px 16px;
-    margin-bottom: 8px; border: 1px solid var(--gray-border);
-    cursor: pointer; transition: all 0.1s;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .date-card:active  { background: var(--green-bg); border-color: var(--green-border); }
-  .date-card-label   { font-size: 17px; font-weight: 500; color: var(--gray-text); }
-  .date-card-sub     { font-size: 12px; color: #aaa; margin-top: 3px; }
-  .date-arrow        { color: #ccc; font-size: 20px; }
 
   .toast {
     position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
@@ -221,12 +210,9 @@
 <div id="screen-login" class="screen active">
   <div style="width:100%;max-width:360px">
     <div class="login-logo">
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="11" r="7" fill="white"/>
-        <path d="M4 34c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-      </svg>
+      <img src="data:image/png;base64,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" alt="ADF" style="width:60px;height:60px;object-fit:contain;border-radius:50%;">
     </div>
-    <div class="login-title">DF Rugby</div>
+    <div class="login-title">Asistencia Infantiles ADF</div>
     <div class="login-sub">Sistema de Asistencia</div>
     <div class="login-card">
       <div class="login-label">Usuario</div>
@@ -252,7 +238,40 @@
     <div class="spinner"></div>
     <span>Cargando fechas…</span>
   </div>
-  <div id="date-list" class="date-list" style="display:none"></div>
+  <div id="calendar-wrapper" style="display:none;flex:1;padding:12px;overflow-y:auto">
+    <div style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--gray-border)">
+      <!-- Calendar nav -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--green-dark)">
+        <button id="cal-prev" onclick="calNav(-1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">‹</button>
+        <span id="cal-title" style="color:#fff;font-size:16px;font-weight:600"></span>
+        <button id="cal-next" onclick="calNav(1)" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">›</button>
+      </div>
+      <!-- Day headers -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f8f8f8;border-bottom:1px solid var(--gray-border)">
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Dom</div>
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Lun</div>
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Mar</div>
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Mié</div>
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Jue</div>
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Vie</div>
+        <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:600;color:#999">Sáb</div>
+      </div>
+      <!-- Calendar grid -->
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);padding:8px"></div>
+    </div>
+    <!-- Legend -->
+    <div style="display:flex;gap:16px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666">
+        <div style="width:14px;height:14px;border-radius:50%;background:var(--green-dark)"></div>Fecha disponible
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666">
+        <div style="width:14px;height:14px;border-radius:50%;background:#e8eaff;border:2px solid var(--green-dark)"></div>Hoy
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#666">
+        <div style="width:14px;height:14px;border-radius:50%;background:#eee"></div>Sin actividad
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ATTENDANCE -->
@@ -269,7 +288,7 @@
   <div id="player-list" class="list" style="display:none"></div>
   <div class="save-bar" id="save-bar" style="display:none">
     <button class="save-btn" id="save-btn" onclick="saveAttendance()">Guardar asistencia</button>
-    <button class="cancel-btn" onclick="cancelAttendance()">Cancelar</button>
+    <button class="cancel-btn" onclick="cancelAttendance()">Cerrar</button>
   </div>
 </div>
 
@@ -297,7 +316,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzigw231rmH-SFGpmhdvwWoWebcejUgPSHiahLTigJqihE5pkhR8MVTReBPOMpeGaxNgg/exec";
+const API_URL = "REEMPLAZAR_CON_TU_URL_DE_APPS_SCRIPT";
 
 let state = {
   username:     "",
@@ -305,8 +324,9 @@ let state = {
   division:     "",
   players:      [],
   dates:        [],
-  selectedDate: null,
-  sheetName:    ""
+  selectedDate:    null,
+  sheetName:       "",
+  availableDates:  {}
 };
 
 const STATE_CLASS = {
@@ -390,63 +410,116 @@ async function loadDatesScreen() {
 
 const DAYS_ES   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const MONTHS_LONG = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+// Calendar state
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+
+function parseDateFromServer(d) {
+  if (!d) return null;
+  if (d.match && d.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return new Date(d + 'T12:00:00');
+  }
+  const p = new Date(d);
+  return isNaN(p.getTime()) ? null : p;
+}
 
 function renderDates(dates) {
-  document.getElementById('dates-loading').style.display = 'none';
-  const list = document.getElementById('date-list');
-  list.style.display = 'block';
-  list.innerHTML = '';
+  document.getElementById('dates-loading').style.display  = 'none';
+  document.getElementById('calendar-wrapper').style.display = 'block';
 
   if (dates.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa">No hay fechas cargadas en este mes</div>';
+    document.getElementById('cal-grid').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa">No hay fechas cargadas</div>';
     return;
   }
 
+  // Build a Set of available date strings "YYYY-MM-DD"
+  state.availableDates = {};
+  dates.forEach(d => {
+    const dt = parseDateFromServer(d.date);
+    if (dt) {
+      const key = dt.getFullYear() + '-' +
+                  String(dt.getMonth()+1).padStart(2,'0') + '-' +
+                  String(dt.getDate()).padStart(2,'0');
+      state.availableDates[key] = d; // map key → full date object
+    }
+  });
+
+  // Navigate calendar to the month that has dates
+  const firstDate = parseDateFromServer(dates[0].date);
+  if (firstDate) {
+    calYear  = firstDate.getFullYear();
+    calMonth = firstDate.getMonth();
+  }
+
+  renderCalendar();
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0;  calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = MONTHS_LONG[calMonth] + ' ' + calYear;
+
+  const grid  = document.getElementById('cal-grid');
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  dates.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'date-card';
+  // First day of month
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
-    let label = d.display;
-    let sub   = '';
-    let badge = '';
+  let html = '';
 
-    // Intentar parsear la fecha en cualquier formato
-    let dt = null;
-    if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      dt = new Date(d.date + 'T12:00:00');
-    } else if (d.date) {
-      // Formato largo de JS Date string
-      const parsed = new Date(d.date);
-      if (!isNaN(parsed.getTime())) dt = parsed;
-    }
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div style="padding:4px"></div>';
+  }
 
-    if (dt) {
-      label = DAYS_ES[dt.getDay()] + ' ' + dt.getDate() + ' de ' + MONTHS_ES[dt.getMonth()];
-      sub   = dt.getDate() + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
-      if (dt > today) {
-        badge = '<span style="font-size:10px;font-weight:600;color:#1565c0;background:#f0f7ff;padding:2px 8px;border-radius:10px;margin-left:8px">próxima</span>';
-      } else if (dt.toDateString() === today.toDateString()) {
-        badge = '<span style="font-size:10px;font-weight:600;color:#1a472a;background:#e8f5e9;padding:2px 8px;border-radius:10px;margin-left:8px">hoy</span>';
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = calYear + '-' +
+                String(calMonth+1).padStart(2,'0') + '-' +
+                String(day).padStart(2,'0');
+    const dt  = new Date(calYear, calMonth, day);
+    const isToday     = dt.toDateString() === today.toDateString();
+    const isAvailable = !!state.availableDates[key];
+    const isFuture    = dt > today;
+
+    let cellStyle = 'width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:3px auto;font-size:13px;font-weight:500;';
+    let onclick   = '';
+
+    if (isAvailable) {
+      if (isToday) {
+        cellStyle += 'background:var(--green-dark);color:#fff;border:3px solid #7b8fd4;cursor:pointer;font-weight:700;';
+      } else if (isFuture) {
+        cellStyle += 'background:var(--green-dark);color:#fff;opacity:0.65;cursor:pointer;';
+      } else {
+        cellStyle += 'background:var(--green-dark);color:#fff;cursor:pointer;';
       }
+      onclick = `onclick="selectDate('${key}')"`;
+    } else if (isToday) {
+      cellStyle += 'background:#e8eaff;color:var(--green-dark);border:2px solid var(--green-dark);font-weight:700;';
+    } else {
+      cellStyle += 'color:#ccc;';
     }
 
-    el.innerHTML =
-      '<div style="display:flex;align-items:center">' +
-        '<div>' +
-          '<div class="date-card-label">' + label + badge + '</div>' +
-          (sub ? '<div class="date-card-sub">' + sub + '</div>' : '') +
-        '</div>' +
-      '</div>' +
-      '<div class="date-arrow">›</div>';
-    el.onclick = () => selectDate(d);
-    list.appendChild(el);
-  });
+    html += `<div style="text-align:center;padding:2px 0">
+      <div style="${cellStyle}" ${onclick}>${day}</div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
 }
 
-async function selectDate(dateObj) {
+async function selectDate(key) {
+  const dateObj = state.availableDates[key];
+  if (!dateObj) return;
   state.selectedDate = dateObj;
   await loadAttendanceScreen();
 }
