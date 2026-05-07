@@ -243,7 +243,15 @@
 <div id="screen-dates" class="screen">
   <div class="header">
     <div class="header-sub" id="dates-division">M13</div>
-    <div class="header-title">Elegí la fecha</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">Elegí la fecha</div>
+      <button id="month-btn" onclick="openMonthPicker()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;
+               cursor:pointer;white-space:nowrap">
+        📅 MES
+      </button>
+    </div>
     <div class="header-meta" id="dates-sheet-name"></div>
   </div>
   <div id="dates-loading" class="loading">
@@ -271,6 +279,15 @@
   </div>
 </div>
 
+<!-- MONTH PICKER MODAL -->
+<div class="modal-bg" id="month-modal" onclick="closeMonthPicker(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:600;color:#002395;margin-bottom:16px">Seleccioná el mes</div>
+    <div id="month-options"></div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-bg" id="modal" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
@@ -295,7 +312,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwi6_PCfuloyFdGXQKWph-cnk6spfWlSYjmQRlvJ5StXv9o2bpqAoDSOI3W9IGjVXL0/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwEVSvjH-QTWheXxr7xIrEn2DaM6kBlZx1ujamN99jRv1SvdOpqWOeSQK46rAJrlYs4/exec";
 
 let state = {
   username:     "",
@@ -303,8 +320,9 @@ let state = {
   division:     "",
   players:      [],
   dates:        [],
-  selectedDate: null,
-  sheetName:    ""
+  selectedDate:   null,
+  sheetName:      "",
+  selectedMonth:  null
 };
 
 const STATE_CLASS = {
@@ -366,14 +384,21 @@ document.getElementById('login-pass').addEventListener('keydown', e => {
 });
 
 // ── DATE PICKER ────────────────────────────────────────────
-async function loadDatesScreen() {
+async function loadDatesScreen(monthOverride) {
   showScreen('dates');
   document.getElementById('dates-division').textContent  = state.division;
   document.getElementById('dates-loading').style.display = 'flex';
   document.getElementById('date-list').style.display     = 'none';
 
+  // Update month button label
+  const m = monthOverride !== undefined ? monthOverride : (new Date().getMonth() + 1);
+  state.selectedMonth = m;
+  document.getElementById('month-btn').textContent = '📅 ' + MONTHS_LONG[m - 1].toUpperCase();
+
   try {
-    const data = await api({ action: "getDates" });
+    const payload = { action: "getDates" };
+    if (monthOverride !== undefined) payload.month = monthOverride;
+    const data = await api(payload);
     if (!data.ok) { showToast("Error: " + data.error); return; }
     state.dates     = data.dates;
     state.sheetName = data.sheetName;
@@ -382,6 +407,46 @@ async function loadDatesScreen() {
   } catch(e) {
     showToast("Error cargando fechas");
   }
+}
+
+const MONTHS_LONG = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+function openMonthPicker() {
+  const current = new Date();
+  const thisMonth = current.getMonth() + 1; // 1-indexed
+  const thisYear  = current.getFullYear();
+
+  // Show months: Feb to Oct (the rugby season) around current month
+  const available = [2,3,4,5,6,7,8,9,10]; // Febrero a Octubre
+  const container = document.getElementById('month-options');
+  container.innerHTML = '';
+
+  available.forEach(m => {
+    const isCurrent  = m === thisMonth;
+    const isPast     = m < thisMonth;
+    const el = document.createElement('div');
+    el.className = 'opt';
+    el.style.cssText = isCurrent
+      ? 'border-color:#002395;background:#f0f2ff'
+      : '';
+    el.innerHTML =
+      '<span style="width:14px;height:14px;border-radius:50%;flex-shrink:0;background:' +
+        (isCurrent ? '#002395' : isPast ? '#aaa' : '#7b8fd4') +
+      ';display:inline-block"></span>' +
+      '<span style="flex:1">' + MONTHS_LONG[m-1] + ' ' + thisYear + '</span>' +
+      (isCurrent ? '<span style="font-size:11px;color:#002395;font-weight:700">actual</span>' : '');
+    el.onclick = () => {
+      closeMonthPicker();
+      loadDatesScreen(m);
+    };
+    container.appendChild(el);
+  });
+
+  document.getElementById('month-modal').classList.add('open');
+}
+
+function closeMonthPicker(e) {
+  document.getElementById('month-modal').classList.remove('open');
 }
 
 const DAYS_ES   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
