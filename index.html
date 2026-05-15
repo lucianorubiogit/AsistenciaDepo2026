@@ -557,7 +557,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwEVSvjH-QTWheXxr7xIrEn2DaM6kBlZx1ujamN99jRv1SvdOpqWOeSQK46rAJrlYs4/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw_x4lwBITktZG8DMbdJcQEAw-r1DyV5r4R4HpteAtxP0fo3993kdxjEcUrk_dqLqBk/exec";
 
 let state = {
   username:     "",
@@ -1003,12 +1003,86 @@ let planState = {
 };
 
 // ── HELPERS ────────────────────────────────────────────────
+// ── PERSISTENCE: Google Sheets via Apps Script ─────────────
+// localStorage is used only as cache for speed.
+// Source of truth is always the Sheet.
+
+async function loadFromServer() {
+  // Try cache first for instant render
+  try {
+    const cached = localStorage.getItem('planning_cache');
+    if (cached) {
+      const c = JSON.parse(cached);
+      planState.playersPos = c.playersPos || [];
+      planState.lineups    = c.lineups    || [];
+      planState.playersPos.sort((a, b) => (a.apodo || a.name || '').localeCompare(b.apodo || b.name || ''));
+    }
+  } catch(e) {}
+
+  // Always fetch fresh from server
+  try {
+    const data = await api({ action: "getPlanningData" });
+    if (data.ok) {
+      planState.playersPos = data.playersPos || [];
+      planState.lineups    = data.lineups    || [];
+      planState.playersPos.sort((a, b) => (a.apodo || a.name || '').localeCompare(b.apodo || b.name || ''));
+      // Update cache
+      localStorage.setItem('planning_cache', JSON.stringify({
+        playersPos: planState.playersPos,
+        lineups:    planState.lineups
+      }));
+    }
+  } catch(e) {
+    console.warn('Could not load planning data from server:', e);
+  }
+}
+
+async function savePositionsToServer() {
+  try {
+    const data = await api({
+      action:   "savePlanningData",
+      dataType: "positions",
+      records:  planState.playersPos
+    });
+    // Update cache
+    localStorage.setItem('planning_cache', JSON.stringify({
+      playersPos: planState.playersPos,
+      lineups:    planState.lineups
+    }));
+    return data;
+  } catch(e) {
+    throw e;
+  }
+}
+
+async function saveLineupsToServer() {
+  try {
+    const data = await api({
+      action:   "savePlanningData",
+      dataType: "lineups",
+      lineups:  planState.lineups
+    });
+    // Update cache
+    localStorage.setItem('planning_cache', JSON.stringify({
+      playersPos: planState.playersPos,
+      lineups:    planState.lineups
+    }));
+    return data;
+  } catch(e) {
+    throw e;
+  }
+}
+
+// Legacy sync helpers (kept for compatibility)
 function loadFromStorage() {
   try {
-    planState.playersPos = JSON.parse(localStorage.getItem('players_positions') || '[]');
-    planState.lineups    = JSON.parse(localStorage.getItem('lineups') || '[]');
-    // Sort by apodo
-    planState.playersPos.sort((a, b) => (a.apodo || a.name || '').localeCompare(b.apodo || b.name || ''));
+    const cached = localStorage.getItem('planning_cache');
+    if (cached) {
+      const c = JSON.parse(cached);
+      planState.playersPos = c.playersPos || [];
+      planState.lineups    = c.lineups    || [];
+      planState.playersPos.sort((a, b) => (a.apodo || a.name || '').localeCompare(b.apodo || b.name || ''));
+    }
   } catch(e) {
     planState.playersPos = [];
     planState.lineups    = [];
@@ -1016,8 +1090,10 @@ function loadFromStorage() {
 }
 
 function saveToStorage() {
-  localStorage.setItem('players_positions', JSON.stringify(planState.playersPos));
-  localStorage.setItem('lineups',           JSON.stringify(planState.lineups));
+  localStorage.setItem('planning_cache', JSON.stringify({
+    playersPos: planState.playersPos,
+    lineups:    planState.lineups
+  }));
 }
 
 function getPosRecord(playerId) {
@@ -1038,22 +1114,31 @@ function initDefaultTeam() {
 // ── ENTRY: open planning screen ────────────────────────────
 async function enterPlanning() {
   showScreen('planning');
+
+  // Show loading state
+  document.getElementById('edit-loading').style.display = 'flex';
+  document.getElementById('edit-list').style.display    = 'none';
+  document.getElementById('edit-save-bar').style.display = 'none';
+
+  // 1) Load cache immediately for fast render
   loadFromStorage();
 
-  // Load players from server if not already loaded in state
+  // 2) Load players from server if needed
   if (planState.players.length === 0 && state.players.length > 0) {
     planState.players = state.players;
-    syncPlayersPos();
   } else if (planState.players.length === 0) {
-    // Fetch from server
     try {
-      const data = await api({ action:"getPlayers", dateCol:null, sheetName: state.sheetName || "Abril 26" });
-      if (data.ok) {
-        planState.players = data.players;
-        syncPlayersPos();
-      }
+      const shName = state.sheetName || "Mayo 26";
+      const data   = await api({ action:"getPlayers", dateCol:null, sheetName: shName });
+      if (data.ok) planState.players = data.players;
     } catch(e) {}
   }
+
+  // 3) Load planning data from server (positions + lineups)
+  await loadFromServer();
+
+  // 4) Sync any new players not yet in planState.playersPos
+  syncPlayersPos();
 
   initDefaultTeam();
   switchPlanTab('edit');
@@ -1146,16 +1231,32 @@ function onPosChange(sel) {
   // Don't save yet - wait for save button
 }
 
-function savePositions() {
+async function savePositions() {
   // Read all selects and update planState
   document.querySelectorAll('#edit-list select').forEach(sel => {
-    const id  = sel.dataset.id;
+    const id    = sel.dataset.id;
     const field = sel.dataset.field;
     let rec = planState.playersPos.find(r => r.id === id);
     if (rec) rec[field] = sel.value;
   });
-  saveToStorage();
-  showToast('Posiciones guardadas');
+
+  const btn = document.querySelector('#edit-save-bar button');
+  btn.disabled    = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    const res = await savePositionsToServer();
+    if (res.ok) {
+      showToast('✓ Posiciones guardadas en Google Sheets');
+    } else {
+      showToast('Error al guardar: ' + res.error);
+    }
+  } catch(e) {
+    showToast('Error de conexión al guardar');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Guardar posiciones';
+  }
 }
 
 // ── SECTION 2: LINEUP ─────────────────────────────────────
@@ -1188,7 +1289,7 @@ function addTeam() {
     team_name: 'Equipo ' + (letters[n-1] || n),
     positions: {}
   });
-  saveToStorage();
+  saveToStorage(); // cache immediately
   planState.activeTeamIdx = planState.lineups.length - 1;
   renderTeamTabs();
   renderField();
@@ -1222,9 +1323,22 @@ function renderField() {
   });
 }
 
-function saveLineup() {
-  saveToStorage();
-  showToast('Equipo guardado');
+async function saveLineup() {
+  const btn = document.querySelector('#field-container').nextElementSibling.querySelector('.save-btn') ||
+              document.querySelector('#plan-lineup .save-btn');
+
+  try {
+    const res = await saveLineupsToServer();
+    if (res && res.ok) {
+      showToast('✓ Equipo guardado en Google Sheets');
+    } else {
+      saveToStorage(); // fallback to cache
+      showToast('Guardado localmente');
+    }
+  } catch(e) {
+    saveToStorage();
+    showToast('Guardado localmente (sin conexión)');
+  }
 }
 
 // ── POSITION MODAL ─────────────────────────────────────────
@@ -1332,7 +1446,7 @@ function assignPlayer(playerId) {
   }
 
   lineup.positions[planState.activePosModal] = playerId;
-  saveToStorage();
+  saveToStorage(); // cache — use "Guardar equipo" to persist to server
   renderField();
   closePosModal();
 }
@@ -1341,7 +1455,7 @@ function clearPosition() {
   const lineup = getActiveLineup();
   if (!lineup) return;
   delete lineup.positions[planState.activePosModal];
-  saveToStorage();
+  saveToStorage(); // cache
   renderField();
   closePosModal();
 }
