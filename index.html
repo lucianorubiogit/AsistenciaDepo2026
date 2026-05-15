@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Asistencia Infantiles ADF</title>
+<title>Rugby Infantil ADF</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -214,6 +214,123 @@
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+/* ── PLANNING TABS ── */
+.plan-tab {
+  flex:1; padding:8px 4px; border:none; border-radius:10px 10px 0 0;
+  background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7);
+  font-size:11px; font-weight:600; cursor:pointer; transition:all 0.15s;
+  white-space:nowrap; min-width:0;
+}
+.plan-tab.active {
+  background:#fff; color:#002395;
+}
+.plan-section { display:flex; flex-direction:column; }
+
+/* ── PLAYER ROW IN EDIT ── */
+.edit-row {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 12px; background:#fff; border-radius:12px;
+  margin-bottom:6px; border:1px solid #eee;
+}
+.edit-row .player-avatar {
+  width:38px; height:38px; border-radius:50%; background:#002395;
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; flex-shrink:0;
+}
+.edit-row .player-info { flex:1; min-width:0; }
+.edit-row .player-info .pname { font-size:13px; font-weight:600; color:#333; }
+.edit-row .player-info .papodo { font-size:11px; color:#999; }
+.pos-select {
+  border:1px solid #ddd; border-radius:8px; padding:5px 6px;
+  font-size:11px; color:#333; background:#fff; cursor:pointer;
+  max-width:100px; flex-shrink:0;
+}
+
+/* ── FIELD NODES ── */
+.pos-node {
+  position:absolute; transform:translate(-50%,-50%);
+  width:46px; display:flex; flex-direction:column; align-items:center;
+  cursor:pointer; transition:transform 0.15s;
+}
+.pos-node:active { transform:translate(-50%,-50%) scale(0.9); }
+.pos-num {
+  width:34px; height:34px; border-radius:50%;
+  background:#002395; border:2px solid rgba(255,255,255,0.8);
+  color:#fff; font-size:12px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  transition:background 0.2s;
+}
+.pos-node.filled .pos-num { background:#1a472a; border-color:#81c784; }
+.pos-node.filled .pos-label { color:#c8edc4; }
+.pos-label {
+  font-size:8px; font-weight:700; color:rgba(255,255,255,0.8);
+  margin-top:2px; text-align:center; line-height:1.1;
+  white-space:nowrap;
+}
+.pos-player-name {
+  font-size:8px; font-weight:700; color:#ffd700;
+  background:rgba(0,0,0,0.5); border-radius:4px;
+  padding:1px 4px; margin-top:1px; text-align:center;
+  max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+/* ── TEAM TABS ── */
+.team-tab {
+  padding:6px 14px; border-radius:20px; border:1px solid #ddd;
+  background:#fff; font-size:12px; font-weight:600; cursor:pointer;
+  white-space:nowrap; color:#555; transition:all 0.15s;
+  flex-shrink:0;
+}
+.team-tab.active { background:#002395; color:#fff; border-color:#002395; }
+
+/* ── PLAYER OPTION IN MODAL ── */
+.player-opt {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px; margin-bottom:6px;
+  border:1px solid #eee; background:#fff; cursor:pointer;
+  transition:background 0.1s;
+}
+.player-opt:active { background:#f0f2ff; }
+.player-opt .pav {
+  width:32px; height:32px; border-radius:50%;
+  background:#002395; color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; flex-shrink:0;
+}
+.player-opt.used { opacity:0.4; pointer-events:none; }
+.section-label {
+  font-size:10px; font-weight:700; color:#aaa; letter-spacing:0.5px;
+  margin-bottom:6px; padding-left:2px; text-transform:uppercase;
+}
+
+/* ── VIEW SECTION ── */
+.view-team-card {
+  background:#fff; border-radius:14px; margin-bottom:12px;
+  border:1px solid #eee; overflow:hidden;
+}
+.view-team-header {
+  background:#002395; color:#fff; padding:12px 16px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.view-group-label {
+  font-size:11px; font-weight:700; color:#002395;
+  padding:8px 14px; background:#f0f2ff; border-bottom:1px solid #e0e4ff;
+  text-transform:uppercase; letter-spacing:0.5px;
+}
+.view-pos-row {
+  display:flex; align-items:center; padding:10px 14px;
+  border-bottom:1px solid #f5f5f5;
+}
+.view-pos-num {
+  width:24px; height:24px; border-radius:50%; background:#002395;
+  color:#fff; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-right:10px;
+}
+.view-pos-name { font-size:13px; color:#555; flex:1; }
+.view-player-apodo { font-size:14px; font-weight:700; color:#002395; }
+
 </style>
 </head>
 <body>
@@ -224,8 +341,8 @@
     <div class="login-logo">
       <img src="data:image/png;base64,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" alt="ADF" style="width:60px;height:60px;object-fit:contain;border-radius:50%;">
     </div>
-    <div class="login-title">Asistencia Infantiles ADF</div>
-    <div class="login-sub">Sistema de Asistencia</div>
+    <div class="login-title">Rugby Infantil ADF</div>
+    <div class="login-sub">Sistema de Asistencia y Planificación</div>
     <div class="login-card">
       <div class="login-label">Usuario</div>
       <input id="login-user" class="login-input" type="text" autocapitalize="none"
@@ -243,12 +360,18 @@
 <div id="screen-dates" class="screen">
   <div class="header">
     <div class="header-sub" id="dates-division">M13</div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="header-title">Elegí la fecha</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div class="header-title" style="flex-shrink:0">Elegí la fecha</div>
+      <button onclick="enterPlanning()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;
+               cursor:pointer;white-space:nowrap;flex-shrink:0">
+        📋 Planificación
+      </button>
       <button id="month-btn" onclick="openMonthPicker()"
         style="background:rgba(255,255,255,0.15);border:none;color:#fff;
                padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;
-               cursor:pointer;white-space:nowrap">
+               cursor:pointer;white-space:nowrap;flex-shrink:0">
         📅 MES
       </button>
     </div>
@@ -309,10 +432,132 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     PLANNING SCREEN — injected after screen-attendance
+     ═══════════════════════════════════════════════════════ -->
+<div id="screen-planning" class="screen">
+  <div class="header" style="padding-bottom:0">
+    <div class="header-sub">Rugby Infantil ADF</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="header-title">Planificación</div>
+      <button onclick="showScreen('dates')"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
+        ← Volver
+      </button>
+    </div>
+    <!-- Tab bar -->
+    <div style="display:flex;gap:4px;padding-bottom:0">
+      <button class="plan-tab active" id="tab-edit"   onclick="switchPlanTab('edit')"  >Edición de equipo</button>
+      <button class="plan-tab"        id="tab-lineup" onclick="switchPlanTab('lineup')" >Armado de equipos</button>
+      <button class="plan-tab"        id="tab-view"   onclick="switchPlanTab('view')"  >Visualizar</button>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Edición de equipo -->
+  <div id="plan-edit" class="plan-section" style="flex:1;overflow-y:auto;padding:10px">
+    <div id="edit-loading" class="loading"><div class="spinner"></div><span>Cargando jugadores…</span></div>
+    <div id="edit-list" style="display:none"></div>
+    <div style="padding:10px 0 4px;display:none" id="edit-save-bar">
+      <button onclick="savePositions()"
+        style="width:100%;padding:14px;background:#1a472a;color:#fff;border:none;
+               border-radius:13px;font-size:15px;font-weight:600;cursor:pointer">
+        Guardar posiciones
+      </button>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Armado de equipos -->
+  <div id="plan-lineup" class="plan-section" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <!-- Team tabs row -->
+    <div style="display:flex;align-items:center;gap:6px;padding:10px 10px 0;overflow-x:auto;flex-shrink:0" id="team-tabs-row">
+    </div>
+    <!-- Field container -->
+    <div style="flex:1;overflow-y:auto;padding:8px 10px 0" id="field-container">
+      <div id="rugby-field-wrap" style="position:relative;width:100%;max-width:420px;margin:0 auto">
+        <div id="rugby-field" style="
+          background: linear-gradient(180deg,#2d7a3a 0%,#246b31 50%,#2d7a3a 100%);
+          border-radius:12px;border:3px solid rgba(255,255,255,0.3);
+          position:relative;overflow:hidden;
+          padding-bottom:130%; /* tall field for mobile portrait */
+        ">
+          <!-- Field lines -->
+          <div style="position:absolute;inset:0;pointer-events:none">
+            <div style="position:absolute;top:50%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.2)"></div>
+            <div style="position:absolute;top:25%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.15)"></div>
+            <div style="position:absolute;top:75%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.15)"></div>
+          </div>
+          <!-- Position nodes — placed with absolute % positioning matching rugby formation -->
+          <!-- FORWARDS ROW 1: 1,2,3 (scrum front row) -->
+          <div class="pos-node" id="node-Pilar Izquierdo"   style="left:32%;top:4%"  onclick="openPosModal('Pilar Izquierdo')"><span class="pos-num">1</span><span class="pos-label">P.Izq</span></div>
+          <div class="pos-node" id="node-Hooker"            style="left:46%;top:4%"  onclick="openPosModal('Hooker')"><span class="pos-num">2</span><span class="pos-label">Hook</span></div>
+          <div class="pos-node" id="node-Pilar Derecho"     style="left:60%;top:4%"  onclick="openPosModal('Pilar Derecho')"><span class="pos-num">3</span><span class="pos-label">P.Der</span></div>
+          <!-- FORWARDS ROW 2: 4,5 (locks) -->
+          <div class="pos-node" id="node-Segunda Línea (4)" style="left:39%;top:14%" onclick="openPosModal('Segunda Línea (4)')"><span class="pos-num">4</span><span class="pos-label">2ªL</span></div>
+          <div class="pos-node" id="node-Segunda Línea (5)" style="left:53%;top:14%" onclick="openPosModal('Segunda Línea (5)')"><span class="pos-num">5</span><span class="pos-label">2ªL</span></div>
+          <!-- FORWARDS ROW 3: 6,7,8 (back row) -->
+          <div class="pos-node" id="node-Ala Cerrado"       style="left:60%;top:24%" onclick="openPosModal('Ala Cerrado')"><span class="pos-num">6</span><span class="pos-label">A.Cie</span></div>
+          <div class="pos-node" id="node-Ala Abierto"       style="left:32%;top:24%" onclick="openPosModal('Ala Abierto')"><span class="pos-num">7</span><span class="pos-label">A.Abi</span></div>
+          <div class="pos-node" id="node-Octavo"            style="left:46%;top:33%" onclick="openPosModal('Octavo')"><span class="pos-num">8</span><span class="pos-label">Oct</span></div>
+          <!-- BACKS -->
+          <div class="pos-node" id="node-Medio Scrum"       style="left:60%;top:43%" onclick="openPosModal('Medio Scrum')"><span class="pos-num">9</span><span class="pos-label">M.Scr</span></div>
+          <div class="pos-node" id="node-Apertura"          style="left:46%;top:53%" onclick="openPosModal('Apertura')"><span class="pos-num">10</span><span class="pos-label">Aper</span></div>
+          <div class="pos-node" id="node-Primer Centro"     style="left:32%;top:63%" onclick="openPosModal('Primer Centro')"><span class="pos-num">12</span><span class="pos-label">1ºCen</span></div>
+          <div class="pos-node" id="node-Segundo Centro"    style="left:18%;top:70%" onclick="openPosModal('Segundo Centro')"><span class="pos-num">13</span><span class="pos-label">2ºCen</span></div>
+          <div class="pos-node" id="node-Wing Izquierdo"    style="left:4%;top:78%"  onclick="openPosModal('Wing Izquierdo')"><span class="pos-num">11</span><span class="pos-label">W.Izq</span></div>
+          <div class="pos-node" id="node-Wing Derecho"      style="left:74%;top:63%" onclick="openPosModal('Wing Derecho')"><span class="pos-num">14</span><span class="pos-label">W.Der</span></div>
+          <div class="pos-node" id="node-Fullback"          style="left:46%;top:84%" onclick="openPosModal('Fullback')"><span class="pos-num">15</span><span class="pos-label">FB</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:8px 10px;background:#fff;border-top:1px solid #ddd;display:flex;gap:8px;flex-shrink:0">
+      <button onclick="saveLineup()"
+        style="flex:1;padding:13px;background:#002395;color:#fff;border:none;
+               border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
+        Guardar equipo
+      </button>
+      <button onclick="showScreen('dates')"
+        style="flex:1;padding:13px;background:transparent;color:#666;
+               border:1px solid #ddd;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer">
+        Cerrar
+      </button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Visualizar -->
+  <div id="plan-view" class="plan-section" style="display:none;flex:1;overflow-y:auto;padding:10px">
+    <div id="view-content"></div>
+  </div>
+</div>
+
+<!-- POSITION ASSIGNMENT MODAL -->
+<div class="modal-bg" id="pos-modal" onclick="closePosModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div id="pos-modal-title" style="font-size:15px;font-weight:700;color:#002395;margin-bottom:4px"></div>
+    <div id="pos-modal-current" style="font-size:12px;color:#aaa;margin-bottom:14px"></div>
+    <div id="pos-modal-primary" style="margin-bottom:12px"></div>
+    <div id="pos-modal-secondary" style="margin-bottom:12px"></div>
+    <div id="pos-modal-all-wrap">
+      <button onclick="toggleAllPlayers()" id="btn-show-all"
+        style="width:100%;padding:10px;background:#f5f5f5;border:1px solid #ddd;
+               border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px">
+        Mostrar todos los jugadores
+      </button>
+      <div id="pos-modal-all" style="display:none"></div>
+    </div>
+    <button onclick="clearPosition()"
+      style="width:100%;padding:10px;background:#fff5f5;border:1px solid #ef9a9a;
+             border-radius:10px;font-size:13px;font-weight:500;color:#b71c1c;cursor:pointer;margin-top:8px">
+      Quitar jugador de esta posición
+    </button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwEVSvjH-QTWheXxr7xIrEn2DaM6kBlZx1ujamN99jRv1SvdOpqWOeSQK46rAJrlYs4/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby_cgbX9MU5bOt2zrsiJP7GH36uyIEXqn4jZ_-1zT_I8579KoTX760U3UDGe-VwDu8PRg/exec";
 
 let state = {
   username:     "",
@@ -715,6 +960,435 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+// ════════════════════════════════════════════════════════════
+// PLANNING MODULE — localStorage persistence
+// Keys:
+//   players_positions: [{id, name, apodo, primary_position, secondary_position}]
+//   lineups: [{team_id, team_name, positions: {"Pilar Izquierdo": "player_id", ...}}]
+// ════════════════════════════════════════════════════════════
+
+const POSITIONS = [
+  "Pilar Izquierdo","Hooker","Pilar Derecho",
+  "Segunda Línea (4)","Segunda Línea (5)",
+  "Ala Cerrado","Ala Abierto","Octavo",
+  "Medio Scrum","Apertura",
+  "Primer Centro","Segundo Centro",
+  "Wing Izquierdo","Wing Derecho","Fullback"
+];
+
+const POS_NUMBERS = {
+  "Pilar Izquierdo":1,"Hooker":2,"Pilar Derecho":3,
+  "Segunda Línea (4)":4,"Segunda Línea (5)":5,
+  "Ala Cerrado":6,"Ala Abierto":7,"Octavo":8,
+  "Medio Scrum":9,"Apertura":10,
+  "Wing Izquierdo":11,"Primer Centro":12,"Segundo Centro":13,
+  "Wing Derecho":14,"Fullback":15
+};
+
+const FORWARDS = ["Pilar Izquierdo","Hooker","Pilar Derecho","Segunda Línea (4)","Segunda Línea (5)","Ala Cerrado","Ala Abierto","Octavo"];
+const BACKS    = ["Medio Scrum","Apertura","Wing Izquierdo","Primer Centro","Segundo Centro","Wing Derecho","Fullback"];
+
+// ── STATE ──────────────────────────────────────────────────
+let planState = {
+  players:       [],   // loaded from server on entering planning
+  playersPos:    [],   // from localStorage players_positions
+  lineups:       [],   // from localStorage lineups
+  activeTeamIdx: 0,
+  activePosModal: null // current position being assigned
+};
+
+// ── HELPERS ────────────────────────────────────────────────
+function loadFromStorage() {
+  try {
+    planState.playersPos = JSON.parse(localStorage.getItem('players_positions') || '[]');
+    planState.lineups    = JSON.parse(localStorage.getItem('lineups') || '[]');
+  } catch(e) {
+    planState.playersPos = [];
+    planState.lineups    = [];
+  }
+}
+
+function saveToStorage() {
+  localStorage.setItem('players_positions', JSON.stringify(planState.playersPos));
+  localStorage.setItem('lineups',           JSON.stringify(planState.lineups));
+}
+
+function getPosRecord(playerId) {
+  return planState.playersPos.find(p => p.id === playerId) || null;
+}
+
+function getActiveLineup() {
+  return planState.lineups[planState.activeTeamIdx] || null;
+}
+
+function initDefaultTeam() {
+  if (planState.lineups.length === 0) {
+    planState.lineups = [{ team_id:'team_1', team_name:'Equipo A', positions:{} }];
+    saveToStorage();
+  }
+}
+
+// ── ENTRY: open planning screen ────────────────────────────
+async function enterPlanning() {
+  showScreen('planning');
+  loadFromStorage();
+
+  // Load players from server if not already loaded in state
+  if (planState.players.length === 0 && state.players.length > 0) {
+    planState.players = state.players;
+    syncPlayersPos();
+  } else if (planState.players.length === 0) {
+    // Fetch from server
+    try {
+      const data = await api({ action:"getPlayers", dateCol:null, sheetName: state.sheetName || "Abril 26" });
+      if (data.ok) {
+        planState.players = data.players;
+        syncPlayersPos();
+      }
+    } catch(e) {}
+  }
+
+  initDefaultTeam();
+  switchPlanTab('edit');
+}
+
+// Ensure every player has a record in playersPos
+function syncPlayersPos() {
+  planState.players.forEach(p => {
+    if (!planState.playersPos.find(r => r.id === String(p.row))) {
+      planState.playersPos.push({
+        id: String(p.row),
+        name: p.name,
+        apodo: p.apodo,
+        primary_position: '',
+        secondary_position: ''
+      });
+    }
+  });
+  saveToStorage();
+}
+
+// ── TAB SWITCHING ──────────────────────────────────────────
+function switchPlanTab(tab) {
+  ['edit','lineup','view'].forEach(t => {
+    document.getElementById('plan-' + t).style.display   = t === tab ? 'flex' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'edit')   renderEditSection();
+  if (tab === 'lineup') renderLineupSection();
+  if (tab === 'view')   renderViewSection();
+}
+
+// ── SECTION 1: EDIT ───────────────────────────────────────
+function renderEditSection() {
+  const loading = document.getElementById('edit-loading');
+  const list    = document.getElementById('edit-list');
+  const savebar = document.getElementById('edit-save-bar');
+
+  if (planState.players.length === 0) {
+    loading.style.display = 'flex';
+    list.style.display    = 'none';
+    savebar.style.display = 'none';
+    return;
+  }
+
+  loading.style.display = 'none';
+  list.style.display    = 'block';
+  savebar.style.display = 'block';
+
+  const posOptions = '<option value="">— sin asignar —</option>' +
+    POSITIONS.map(p => '<option value="' + p + '">' + p + '</option>').join('');
+
+  list.innerHTML = planState.players.map(p => {
+    const rec  = getPosRecord(String(p.row)) || {};
+    const init = p.name.split(' ').slice(0,2).map(w => w[0].toUpperCase()).join('');
+    return '<div class="edit-row">' +
+      '<div class="player-avatar">' + init + '</div>' +
+      '<div class="player-info">' +
+        '<div class="pname">' + (p.apodo ? '"' + p.apodo + '"' : p.name.split(' ')[0]) + '</div>' +
+        '<div class="papodo">' + p.name + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px">' +
+        '<select class="pos-select" data-id="' + p.row + '" data-field="primary_position" onchange="onPosChange(this)">' +
+          posOptions.replace('value="' + (rec.primary_position||'') + '"','value="' + (rec.primary_position||'') + '" selected') +
+        '</select>' +
+        '<select class="pos-select" data-id="' + p.row + '" data-field="secondary_position" onchange="onPosChange(this)">' +
+          posOptions.replace('value="' + (rec.secondary_position||'') + '"','value="' + (rec.secondary_position||'') + '" selected') +
+        '</select>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Set selected values properly
+  list.querySelectorAll('select').forEach(sel => {
+    const rec = getPosRecord(sel.dataset.id) || {};
+    sel.value = rec[sel.dataset.field] || '';
+  });
+}
+
+function onPosChange(sel) {
+  const id    = sel.dataset.id;
+  const field = sel.dataset.field;
+  let rec = planState.playersPos.find(r => r.id === id);
+  if (!rec) return;
+  rec[field] = sel.value;
+  // Don't save yet - wait for save button
+}
+
+function savePositions() {
+  // Read all selects and update planState
+  document.querySelectorAll('#edit-list select').forEach(sel => {
+    const id  = sel.dataset.id;
+    const field = sel.dataset.field;
+    let rec = planState.playersPos.find(r => r.id === id);
+    if (rec) rec[field] = sel.value;
+  });
+  saveToStorage();
+  showToast('Posiciones guardadas');
+}
+
+// ── SECTION 2: LINEUP ─────────────────────────────────────
+function renderLineupSection() {
+  renderTeamTabs();
+  renderField();
+}
+
+function renderTeamTabs() {
+  const row = document.getElementById('team-tabs-row');
+  row.innerHTML = planState.lineups.map((t, i) =>
+    '<button class="team-tab' + (i === planState.activeTeamIdx ? ' active' : '') + '" onclick="selectTeam(' + i + ')">' +
+      t.team_name +
+    '</button>'
+  ).join('') +
+  '<button class="team-tab" onclick="addTeam()" style="border-style:dashed">+ Equipo</button>';
+}
+
+function selectTeam(idx) {
+  planState.activeTeamIdx = idx;
+  renderTeamTabs();
+  renderField();
+}
+
+function addTeam() {
+  const n = planState.lineups.length + 1;
+  const letters = ['A','B','C','D','E','F'];
+  planState.lineups.push({
+    team_id: 'team_' + n,
+    team_name: 'Equipo ' + (letters[n-1] || n),
+    positions: {}
+  });
+  saveToStorage();
+  planState.activeTeamIdx = planState.lineups.length - 1;
+  renderTeamTabs();
+  renderField();
+}
+
+function renderField() {
+  const lineup = getActiveLineup();
+  if (!lineup) return;
+
+  POSITIONS.forEach(pos => {
+    const node      = document.getElementById('node-' + pos);
+    if (!node) return;
+    const playerId  = lineup.positions[pos];
+    const numEl     = node.querySelector('.pos-num');
+    // Remove old player name tag
+    const oldTag = node.querySelector('.pos-player-name');
+    if (oldTag) oldTag.remove();
+
+    if (playerId) {
+      const pr = planState.playersPos.find(r => r.id === playerId);
+      const pl = planState.players.find(p => String(p.row) === playerId);
+      const label = pr?.apodo || pl?.apodo || playerId;
+      node.classList.add('filled');
+      const tag = document.createElement('div');
+      tag.className = 'pos-player-name';
+      tag.textContent = label;
+      node.appendChild(tag);
+    } else {
+      node.classList.remove('filled');
+    }
+  });
+}
+
+function saveLineup() {
+  saveToStorage();
+  showToast('Equipo guardado');
+}
+
+// ── POSITION MODAL ─────────────────────────────────────────
+let showingAllPlayers = false;
+
+function openPosModal(pos) {
+  planState.activePosModal = pos;
+  showingAllPlayers = false;
+
+  const lineup     = getActiveLineup();
+  const currentId  = lineup ? lineup.positions[pos] : null;
+  const usedIds    = lineup ? Object.values(lineup.positions) : [];
+
+  document.getElementById('pos-modal-title').textContent   = pos;
+  document.getElementById('pos-modal-current').textContent =
+    currentId ? 'Asignado: ' + getPlayerLabel(currentId) : 'Sin asignar';
+
+  // Primary position players
+  const primary = planState.playersPos.filter(r => r.primary_position === pos);
+  renderModalGroup('pos-modal-primary', '⭐ Posición principal', primary, usedIds, currentId);
+
+  // Secondary position players
+  const secondary = planState.playersPos.filter(r => r.secondary_position === pos && r.primary_position !== pos);
+  renderModalGroup('pos-modal-secondary', '✦ Posición alternativa', secondary, usedIds, currentId);
+
+  // Reset "show all" button
+  document.getElementById('pos-modal-all').style.display    = 'none';
+  document.getElementById('pos-modal-all').innerHTML        = '';
+  document.getElementById('btn-show-all').style.display     = 'block';
+  document.getElementById('btn-show-all').textContent       = 'Mostrar todos los jugadores';
+
+  document.getElementById('pos-modal').classList.add('open');
+}
+
+function renderModalGroup(containerId, label, records, usedIds, currentId) {
+  const el = document.getElementById(containerId);
+  if (records.length === 0) { el.innerHTML = ''; return; }
+
+  el.innerHTML = '<div class="section-label">' + label + '</div>' +
+    records.map(r => {
+      const pl   = planState.players.find(p => String(p.row) === r.id);
+      const init = (r.apodo || r.name || '').slice(0,2).toUpperCase();
+      const used = usedIds.includes(r.id) && r.id !== currentId;
+      return '<div class="player-opt' + (used ? ' used' : '') + '" onclick="assignPlayer(\'' + r.id + '\')">' +
+        '<div class="pav">' + init + '</div>' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:600">' + (r.apodo ? '"' + r.apodo + '"' : r.name) + '</div>' +
+          '<div style="font-size:11px;color:#aaa">' + r.name + '</div>' +
+        '</div>' +
+        (used ? '<span style="font-size:10px;color:#b71c1c;margin-left:auto">en uso</span>' : '') +
+      '</div>';
+    }).join('');
+}
+
+function toggleAllPlayers() {
+  showingAllPlayers = !showingAllPlayers;
+  const allEl  = document.getElementById('pos-modal-all');
+  const btn    = document.getElementById('btn-show-all');
+  const lineup = getActiveLineup();
+  const usedIds = lineup ? Object.values(lineup.positions) : [];
+  const currentId = lineup ? lineup.positions[planState.activePosModal] : null;
+
+  if (showingAllPlayers) {
+    allEl.style.display = 'block';
+    btn.textContent     = 'Ocultar lista completa';
+    const usedInModal = [
+      ...planState.playersPos.filter(r => r.primary_position === planState.activePosModal),
+      ...planState.playersPos.filter(r => r.secondary_position === planState.activePosModal)
+    ].map(r => r.id);
+    const rest = planState.playersPos.filter(r => !usedInModal.includes(r.id));
+    renderModalGroup('pos-modal-all', 'Todos los jugadores', rest, usedIds, currentId);
+  } else {
+    allEl.style.display = 'none';
+    btn.textContent     = 'Mostrar todos los jugadores';
+  }
+}
+
+function assignPlayer(playerId) {
+  const lineup = getActiveLineup();
+  if (!lineup) return;
+
+  // Check if player is already in another position in this team
+  const existing = Object.entries(lineup.positions).find(([,id]) => id === playerId);
+  if (existing && existing[0] !== planState.activePosModal) {
+    // Swap: remove from old position
+    delete lineup.positions[existing[0]];
+  }
+
+  lineup.positions[planState.activePosModal] = playerId;
+  saveToStorage();
+  renderField();
+  closePosModal();
+}
+
+function clearPosition() {
+  const lineup = getActiveLineup();
+  if (!lineup) return;
+  delete lineup.positions[planState.activePosModal];
+  saveToStorage();
+  renderField();
+  closePosModal();
+}
+
+function closePosModal(e) {
+  document.getElementById('pos-modal').classList.remove('open');
+}
+
+function getPlayerLabel(playerId) {
+  const rec = planState.playersPos.find(r => r.id === playerId);
+  const pl  = planState.players.find(p => String(p.row) === playerId);
+  return rec?.apodo || pl?.apodo || pl?.name || playerId;
+}
+
+// ── SECTION 3: VIEW ───────────────────────────────────────
+function renderViewSection() {
+  const container = document.getElementById('view-content');
+
+  if (planState.lineups.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa">No hay equipos armados</div>';
+    return;
+  }
+
+  container.innerHTML = planState.lineups.map(team => {
+    const fwdRows = FORWARDS.map(pos => viewRow(pos, team)).join('');
+    const bakRows = BACKS.map(pos => viewRow(pos, team)).join('');
+    const filled  = Object.keys(team.positions).length;
+
+    return '<div class="view-team-card">' +
+      '<div class="view-team-header">' +
+        '<span style="font-size:16px;font-weight:700">' + team.team_name + '</span>' +
+        '<span style="font-size:12px;opacity:0.7">' + filled + '/15 posiciones</span>' +
+      '</div>' +
+      '<div class="view-group-label">Forwards (1–8)</div>' + fwdRows +
+      '<div class="view-group-label">Backs (9–15)</div>' + bakRows +
+      '<div style="padding:10px">' +
+        '<button onclick="copyTeam(\'' + team.team_id + '\')" ' +
+          'style="width:100%;padding:11px;background:#f0f2ff;border:1px solid #c0c8f0;' +
+          'border-radius:10px;font-size:13px;font-weight:600;color:#002395;cursor:pointer">' +
+          '📋 Copiar para WhatsApp' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function viewRow(pos, team) {
+  const playerId = team.positions[pos];
+  const label    = playerId ? getPlayerLabel(playerId) : '—';
+  const num      = POS_NUMBERS[pos];
+  return '<div class="view-pos-row">' +
+    '<div class="view-pos-num">' + num + '</div>' +
+    '<div class="view-pos-name">' + pos + '</div>' +
+    '<div class="view-player-apodo">' + label + '</div>' +
+  '</div>';
+}
+
+function copyTeam(teamId) {
+  const team = planState.lineups.find(t => t.team_id === teamId);
+  if (!team) return;
+
+  let text = '🏉 *' + team.team_name + '* — Rugby Infantil ADF\n\n';
+  text += '*FORWARDS*\n';
+  FORWARDS.forEach(pos => {
+    const id = team.positions[pos];
+    text += POS_NUMBERS[pos] + '. ' + pos + ': ' + (id ? getPlayerLabel(id) : '—') + '\n';
+  });
+  text += '\n*BACKS*\n';
+  BACKS.forEach(pos => {
+    const id = team.positions[pos];
+    text += POS_NUMBERS[pos] + '. ' + pos + ': ' + (id ? getPlayerLabel(id) : '—') + '\n';
+  });
+
+  navigator.clipboard.writeText(text).then(() => showToast('Copiado al portapapeles'));
+}
+
 </script>
 </body>
 </html>
