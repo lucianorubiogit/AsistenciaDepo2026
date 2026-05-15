@@ -493,8 +493,8 @@
           <div class="pos-node" id="node-Hooker"            style="left:46%;top:4%"  onclick="openPosModal('Hooker')"><span class="pos-num">2</span><span class="pos-label">Hook</span></div>
           <div class="pos-node" id="node-Pilar Derecho"     style="left:60%;top:4%"  onclick="openPosModal('Pilar Derecho')"><span class="pos-num">3</span><span class="pos-label">P.Der</span></div>
           <!-- FORWARDS ROW 2: 4,5 (locks) -->
-          <div class="pos-node" id="node-Segunda Línea (4)" style="left:39%;top:14%" onclick="openPosModal('Segunda Línea (4)')"><span class="pos-num">4</span><span class="pos-label">2ªL</span></div>
-          <div class="pos-node" id="node-Segunda Línea (5)" style="left:53%;top:14%" onclick="openPosModal('Segunda Línea (5)')"><span class="pos-num">5</span><span class="pos-label">2ªL</span></div>
+          <div class="pos-node" id="node-Segunda Línea A" style="left:39%;top:14%" onclick="openPosModal('Segunda Línea A')"><span class="pos-num">4</span><span class="pos-label">2ªL-A</span></div>
+          <div class="pos-node" id="node-Segunda Línea B" style="left:53%;top:14%" onclick="openPosModal('Segunda Línea B')"><span class="pos-num">5</span><span class="pos-label">2ªL</span></div>
           <!-- FORWARDS ROW 3: 6,7,8 (back row) -->
           <div class="pos-node" id="node-Ala Cerrado"       style="left:60%;top:24%" onclick="openPosModal('Ala Cerrado')"><span class="pos-num">6</span><span class="pos-label">A.Cie</span></div>
           <div class="pos-node" id="node-Ala Abierto"       style="left:32%;top:24%" onclick="openPosModal('Ala Abierto')"><span class="pos-num">7</span><span class="pos-label">A.Abi</span></div>
@@ -969,7 +969,7 @@ function showToast(msg) {
 
 const POSITIONS = [
   "Pilar Izquierdo","Hooker","Pilar Derecho",
-  "Segunda Línea (4)","Segunda Línea (5)",
+  "Segunda Línea A","Segunda Línea B",
   "Ala Cerrado","Ala Abierto","Octavo",
   "Medio Scrum","Apertura",
   "Primer Centro","Segundo Centro",
@@ -978,15 +978,20 @@ const POSITIONS = [
 
 const POS_NUMBERS = {
   "Pilar Izquierdo":1,"Hooker":2,"Pilar Derecho":3,
-  "Segunda Línea (4)":4,"Segunda Línea (5)":5,
+  "Segunda Línea A":4,"Segunda Línea B":5,
   "Ala Cerrado":6,"Ala Abierto":7,"Octavo":8,
   "Medio Scrum":9,"Apertura":10,
   "Wing Izquierdo":11,"Primer Centro":12,"Segundo Centro":13,
   "Wing Derecho":14,"Fullback":15
 };
 
-const FORWARDS = ["Pilar Izquierdo","Hooker","Pilar Derecho","Segunda Línea (4)","Segunda Línea (5)","Ala Cerrado","Ala Abierto","Octavo"];
+const FORWARDS = ["Pilar Izquierdo","Hooker","Pilar Derecho","Segunda Línea A","Segunda Línea B","Ala Cerrado","Ala Abierto","Octavo"];
 const BACKS    = ["Medio Scrum","Apertura","Wing Izquierdo","Primer Centro","Segundo Centro","Wing Derecho","Fullback"];
+
+// Display label — hide internal A/B suffix
+function posLabel(pos) {
+  return pos.replace(' A', '').replace(' B', '');
+}
 
 // ── STATE ──────────────────────────────────────────────────
 let planState = {
@@ -1002,6 +1007,8 @@ function loadFromStorage() {
   try {
     planState.playersPos = JSON.parse(localStorage.getItem('players_positions') || '[]');
     planState.lineups    = JSON.parse(localStorage.getItem('lineups') || '[]');
+    // Sort by apodo
+    planState.playersPos.sort((a, b) => (a.apodo || a.name || '').localeCompare(b.apodo || b.name || ''));
   } catch(e) {
     planState.playersPos = [];
     planState.lineups    = [];
@@ -1054,6 +1061,8 @@ async function enterPlanning() {
 
 // Ensure every player has a record in playersPos
 function syncPlayersPos() {
+  // Sort players by apodo alphabetically
+  planState.players.sort((a, b) => (a.apodo || a.name).localeCompare(b.apodo || b.name));
   planState.players.forEach(p => {
     if (!planState.playersPos.find(r => r.id === String(p.row))) {
       planState.playersPos.push({
@@ -1065,6 +1074,8 @@ function syncPlayersPos() {
       });
     }
   });
+  // Also sort playersPos by apodo
+  planState.playersPos.sort((a, b) => (a.apodo || a.name).localeCompare(b.apodo || b.name));
   saveToStorage();
 }
 
@@ -1097,7 +1108,7 @@ function renderEditSection() {
   savebar.style.display = 'block';
 
   const posOptions = '<option value="">— sin asignar —</option>' +
-    POSITIONS.map(p => '<option value="' + p + '">' + p + '</option>').join('');
+    POSITIONS.map(p => '<option value="' + p + '">' + posLabel(p) + '</option>').join('');
 
   list.innerHTML = planState.players.map(p => {
     const rec  = getPosRecord(String(p.row)) || {};
@@ -1223,27 +1234,45 @@ function openPosModal(pos) {
   planState.activePosModal = pos;
   showingAllPlayers = false;
 
-  const lineup     = getActiveLineup();
-  const currentId  = lineup ? lineup.positions[pos] : null;
-  const usedIds    = lineup ? Object.values(lineup.positions) : [];
+  const lineup    = getActiveLineup();
+  const currentId = lineup ? lineup.positions[pos] : null;
+  const usedIds   = lineup ? Object.values(lineup.positions) : [];
 
-  document.getElementById('pos-modal-title').textContent   = pos;
+  // Determine if this is a forward or back position
+  const isForward = FORWARDS.includes(pos);
+  const isBack    = BACKS.includes(pos);
+  const groupPositions = isForward ? FORWARDS : (isBack ? BACKS : POSITIONS);
+  const groupLabel     = isForward ? '🏉 Todos los Forwards' : (isBack ? '🏃 Todos los Backs' : 'Todos');
+
+  document.getElementById('pos-modal-title').textContent   = posLabel(pos);
   document.getElementById('pos-modal-current').textContent =
     currentId ? 'Asignado: ' + getPlayerLabel(currentId) : 'Sin asignar';
 
-  // Primary position players
+  // 1) Primary: players with this exact position as primary
   const primary = planState.playersPos.filter(r => r.primary_position === pos);
   renderModalGroup('pos-modal-primary', '⭐ Posición principal', primary, usedIds, currentId);
 
-  // Secondary position players
-  const secondary = planState.playersPos.filter(r => r.secondary_position === pos && r.primary_position !== pos);
+  // 2) Secondary: players with this exact position as secondary
+  const primaryIds = primary.map(r => r.id);
+  const secondary  = planState.playersPos.filter(r =>
+    r.secondary_position === pos && !primaryIds.includes(r.id)
+  );
   renderModalGroup('pos-modal-secondary', '✦ Posición alternativa', secondary, usedIds, currentId);
 
-  // Reset "show all" button
-  document.getElementById('pos-modal-all').style.display    = 'none';
-  document.getElementById('pos-modal-all').innerHTML        = '';
-  document.getElementById('btn-show-all').style.display     = 'block';
-  document.getElementById('btn-show-all').textContent       = 'Mostrar todos los jugadores';
+  // 3) Group (all forwards or all backs) — exclude those already shown above
+  const shownIds   = [...primaryIds, ...secondary.map(r => r.id)];
+  const groupRecs  = planState.playersPos.filter(r =>
+    groupPositions.some(gpos => r.primary_position === gpos || r.secondary_position === gpos) &&
+    !shownIds.includes(r.id)
+  );
+  // Deduplicate
+  const seen = new Set();
+  const groupUnique = groupRecs.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+  renderModalGroup('pos-modal-all', groupLabel, groupUnique, usedIds, currentId);
+  document.getElementById('pos-modal-all').style.display = groupUnique.length > 0 ? 'block' : 'none';
+
+  // Hide the "show all" toggle button since group is always shown
+  document.getElementById('btn-show-all').style.display = 'none';
 
   document.getElementById('pos-modal').classList.add('open');
 }
@@ -1365,7 +1394,7 @@ function viewRow(pos, team) {
   const num      = POS_NUMBERS[pos];
   return '<div class="view-pos-row">' +
     '<div class="view-pos-num">' + num + '</div>' +
-    '<div class="view-pos-name">' + pos + '</div>' +
+    '<div class="view-pos-name">' + posLabel(pos) + '</div>' +
     '<div class="view-player-apodo">' + label + '</div>' +
   '</div>';
 }
@@ -1378,12 +1407,12 @@ function copyTeam(teamId) {
   text += '*FORWARDS*\n';
   FORWARDS.forEach(pos => {
     const id = team.positions[pos];
-    text += POS_NUMBERS[pos] + '. ' + pos + ': ' + (id ? getPlayerLabel(id) : '—') + '\n';
+    text += POS_NUMBERS[pos] + '. ' + posLabel(pos) + ': ' + (id ? getPlayerLabel(id) : '—') + '\n';
   });
   text += '\n*BACKS*\n';
   BACKS.forEach(pos => {
     const id = team.positions[pos];
-    text += POS_NUMBERS[pos] + '. ' + pos + ': ' + (id ? getPlayerLabel(id) : '—') + '\n';
+    text += POS_NUMBERS[pos] + '. ' + posLabel(pos) + ': ' + (id ? getPlayerLabel(id) : '—') + '\n';
   });
 
   navigator.clipboard.writeText(text).then(() => showToast('Copiado al portapapeles'));
