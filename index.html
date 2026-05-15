@@ -496,8 +496,8 @@
           <div class="pos-node" id="node-Segunda Línea A" style="left:39%;top:14%" onclick="openPosModal('Segunda Línea A')"><span class="pos-num">4</span><span class="pos-label">2ªL-A</span></div>
           <div class="pos-node" id="node-Segunda Línea B" style="left:53%;top:14%" onclick="openPosModal('Segunda Línea B')"><span class="pos-num">5</span><span class="pos-label">2ªL</span></div>
           <!-- FORWARDS ROW 3: 6,7,8 (back row) -->
-          <div class="pos-node" id="node-Ala Cerrado"       style="left:60%;top:24%" onclick="openPosModal('Ala Cerrado')"><span class="pos-num">6</span><span class="pos-label">A.Cie</span></div>
-          <div class="pos-node" id="node-Ala Abierto"       style="left:32%;top:24%" onclick="openPosModal('Ala Abierto')"><span class="pos-num">7</span><span class="pos-label">A.Abi</span></div>
+          <div class="pos-node" id="node-Ala Derecho"       style="left:60%;top:24%" onclick="openPosModal('Ala Derecho')"><span class="pos-num">6</span><span class="pos-label">A.Cie</span></div>
+          <div class="pos-node" id="node-Ala Izquierdo"       style="left:32%;top:24%" onclick="openPosModal('Ala Izquierdo')"><span class="pos-num">7</span><span class="pos-label">A.Abi</span></div>
           <div class="pos-node" id="node-Octavo"            style="left:46%;top:33%" onclick="openPosModal('Octavo')"><span class="pos-num">8</span><span class="pos-label">Oct</span></div>
           <!-- BACKS -->
           <div class="pos-node" id="node-Medio Scrum"       style="left:60%;top:43%" onclick="openPosModal('Medio Scrum')"><span class="pos-num">9</span><span class="pos-label">M.Scr</span></div>
@@ -557,7 +557,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbw_x4lwBITktZG8DMbdJcQEAw-r1DyV5r4R4HpteAtxP0fo3993kdxjEcUrk_dqLqBk/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxgHNdr-rGE4UKTExq9SzG7_N3lI0hNAhzg_2UxQwO5wVxW58jiNGwEvOK1r08ScXPN/exec";
 
 let state = {
   username:     "",
@@ -970,7 +970,7 @@ function showToast(msg) {
 const POSITIONS = [
   "Pilar Izquierdo","Hooker","Pilar Derecho",
   "Segunda Línea A","Segunda Línea B",
-  "Ala Cerrado","Ala Abierto","Octavo",
+  "Ala Derecho","Ala Izquierdo","Octavo",
   "Medio Scrum","Apertura",
   "Primer Centro","Segundo Centro",
   "Wing Izquierdo","Wing Derecho","Fullback"
@@ -979,13 +979,13 @@ const POSITIONS = [
 const POS_NUMBERS = {
   "Pilar Izquierdo":1,"Hooker":2,"Pilar Derecho":3,
   "Segunda Línea A":4,"Segunda Línea B":5,
-  "Ala Cerrado":6,"Ala Abierto":7,"Octavo":8,
+  "Ala Derecho":6,"Ala Izquierdo":7,"Octavo":8,
   "Medio Scrum":9,"Apertura":10,
   "Wing Izquierdo":11,"Primer Centro":12,"Segundo Centro":13,
   "Wing Derecho":14,"Fullback":15
 };
 
-const FORWARDS = ["Pilar Izquierdo","Hooker","Pilar Derecho","Segunda Línea A","Segunda Línea B","Ala Cerrado","Ala Abierto","Octavo"];
+const FORWARDS = ["Pilar Izquierdo","Hooker","Pilar Derecho","Segunda Línea A","Segunda Línea B","Ala Derecho","Ala Izquierdo","Octavo"];
 const BACKS    = ["Medio Scrum","Apertura","Wing Izquierdo","Primer Centro","Segundo Centro","Wing Derecho","Fullback"];
 
 // Display label — hide internal A/B suffix
