@@ -1307,7 +1307,8 @@ function renderLineupList() {
     const playerId = lineup ? lineup.positions[pos] : null;
     const label    = playerId ? getPlayerLabel(playerId) : null;
     const num      = POS_NUMBERS[pos];
-    return '<div class="lineup-row" onclick="openPosModal('' + pos.replace(/'/g, "\'") + '')">' +
+    const posIdx   = POSITIONS.indexOf(pos);
+    return '<div class="lineup-row" onclick="openPosModalByIndex(' + posIdx + ')">' +
       '<div class="lineup-pos-num">' + num + '</div>' +
       '<div class="lineup-pos-name">' + posLabel(pos) + '</div>' +
       '<div class="lineup-player">' +
@@ -1344,6 +1345,10 @@ async function saveLineup() {
 
 // ── POSITION MODAL ─────────────────────────────────────────
 let showingAllPlayers = false;
+
+function openPosModalByIndex(idx) {
+  openPosModal(POSITIONS[idx]);
+}
 
 function openPosModal(pos) {
   planState.activePosModal = pos;
