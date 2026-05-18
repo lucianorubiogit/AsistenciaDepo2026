@@ -35,6 +35,7 @@
     min-height: 100vh;
     color: var(--gray-text);
     overscroll-behavior-y: contain;
+    touch-action: pan-x pan-y;
   }
 
   .screen { display: none; min-height: 100vh; flex-direction: column; }
@@ -621,6 +622,16 @@ async function doLogin() {
     errEl.textContent = "Error de conexión. Revisá el link de la app.";
   }
 }
+
+// Prevent pull-to-refresh on Chrome mobile
+let lastY = 0;
+document.addEventListener('touchstart', e => { lastY = e.touches[0].clientY; }, { passive: true });
+document.addEventListener('touchmove', e => {
+  const y = e.touches[0].clientY;
+  const el = e.target.closest('.list, .date-list, #edit-list, #lineup-list-container, #plan-view, .modal');
+  if (!el && y > lastY) e.preventDefault();
+  lastY = y;
+}, { passive: false });
 
 document.getElementById('login-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
@@ -1326,20 +1337,22 @@ function renderLineupList() {
 }
 
 async function saveLineup() {
-  const btn = document.querySelector('#field-container').nextElementSibling.querySelector('.save-btn') ||
-              document.querySelector('#plan-lineup .save-btn');
+  const btn = document.querySelector('#plan-lineup button[onclick="saveLineup()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
 
   try {
     const res = await saveLineupsToServer();
     if (res && res.ok) {
       showToast('✓ Equipo guardado en Google Sheets');
     } else {
-      saveToStorage(); // fallback to cache
+      saveToStorage();
       showToast('Guardado localmente');
     }
   } catch(e) {
     saveToStorage();
     showToast('Guardado localmente (sin conexión)');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar equipo'; }
   }
 }
 
@@ -1477,6 +1490,18 @@ function getPlayerLabel(playerId) {
 }
 
 // ── SECTION 3: VIEW ───────────────────────────────────────
+function viewRow(pos, team) {
+  const playerId = team.positions[pos];
+  const label    = playerId ? getPlayerLabel(playerId) : '—';
+  const num      = POS_NUMBERS[pos];
+  const filled   = !!playerId;
+  return '<div class="view-pos-row">' +
+    '<div class="view-pos-num">' + num + '</div>' +
+    '<div class="view-pos-name">' + posLabel(pos) + '</div>' +
+    '<div class="view-player-apodo" style="color:' + (filled ? '#1a472a' : '#ccc') + '">' + label + '</div>' +
+  '</div>';
+}
+
 function renderViewSection() {
   const container = document.getElementById('view-content');
   if (planState.lineups.length === 0) {
