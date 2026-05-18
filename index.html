@@ -34,6 +34,7 @@
     background: #f0f2f0;
     min-height: 100vh;
     color: var(--gray-text);
+    overscroll-behavior-y: contain;
   }
 
   .screen { display: none; min-height: 100vh; flex-direction: column; }
@@ -304,6 +305,31 @@
   margin-bottom:6px; padding-left:2px; text-transform:uppercase;
 }
 
+/* ── LINEUP LIST ── */
+.lineup-row {
+  display:flex; align-items:center; gap:10px;
+  padding:14px 14px; background:#fff;
+  border-bottom:1px solid #f0f0f0; cursor:pointer;
+  transition:background 0.1s;
+}
+.lineup-row:active { background:#f0f2ff; }
+.lineup-row:last-child { border-bottom:none; border-radius:0 0 10px 10px; }
+.lineup-pos-num {
+  width:28px; height:28px; border-radius:50%;
+  background:#002395; color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; flex-shrink:0;
+}
+.lineup-pos-name { font-size:14px; color:#444; width:130px; flex-shrink:0; font-weight:500; }
+.lineup-player { flex:1; min-width:0; }
+.lineup-player-filled {
+  font-size:15px; font-weight:700; color:#1a472a;
+  background:#e8f5e9; padding:3px 10px; border-radius:20px;
+  display:inline-block;
+}
+.lineup-player-empty { font-size:13px; color:#bbb; font-style:italic; }
+.lineup-chevron { color:#ccc; font-size:20px; flex-shrink:0; }
+
 /* ── VIEW SECTION ── */
 .view-team-card {
   background:#fff; border-radius:14px; margin-bottom:12px;
@@ -470,44 +496,16 @@
   <!-- SECTION 2: Armado de equipos -->
   <div id="plan-lineup" class="plan-section" style="display:none;flex-direction:column;flex:1;overflow:hidden">
     <!-- Team tabs row -->
-    <div style="display:flex;align-items:center;gap:6px;padding:10px 10px 0;overflow-x:auto;flex-shrink:0" id="team-tabs-row">
-    </div>
-    <!-- Field container -->
-    <div style="flex:1;overflow-y:auto;padding:8px 10px 0" id="field-container">
-      <div id="rugby-field-wrap" style="position:relative;width:100%;max-width:420px;margin:0 auto">
-        <div id="rugby-field" style="
-          background: linear-gradient(180deg,#2d7a3a 0%,#246b31 50%,#2d7a3a 100%);
-          border-radius:12px;border:3px solid rgba(255,255,255,0.3);
-          position:relative;overflow:hidden;
-          padding-bottom:130%; /* tall field for mobile portrait */
-        ">
-          <!-- Field lines -->
-          <div style="position:absolute;inset:0;pointer-events:none">
-            <div style="position:absolute;top:50%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.2)"></div>
-            <div style="position:absolute;top:25%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.15)"></div>
-            <div style="position:absolute;top:75%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.15)"></div>
-          </div>
-          <!-- Position nodes — placed with absolute % positioning matching rugby formation -->
-          <!-- FORWARDS ROW 1: 1,2,3 (scrum front row) -->
-          <div class="pos-node" id="node-Pilar Izquierdo"   style="left:32%;top:4%"  onclick="openPosModal('Pilar Izquierdo')"><span class="pos-num">1</span><span class="pos-label">P.Izq</span></div>
-          <div class="pos-node" id="node-Hooker"            style="left:46%;top:4%"  onclick="openPosModal('Hooker')"><span class="pos-num">2</span><span class="pos-label">Hook</span></div>
-          <div class="pos-node" id="node-Pilar Derecho"     style="left:60%;top:4%"  onclick="openPosModal('Pilar Derecho')"><span class="pos-num">3</span><span class="pos-label">P.Der</span></div>
-          <!-- FORWARDS ROW 2: 4,5 (locks) -->
-          <div class="pos-node" id="node-Segunda Línea A" style="left:39%;top:14%" onclick="openPosModal('Segunda Línea A')"><span class="pos-num">4</span><span class="pos-label">2ªL-A</span></div>
-          <div class="pos-node" id="node-Segunda Línea B" style="left:53%;top:14%" onclick="openPosModal('Segunda Línea B')"><span class="pos-num">5</span><span class="pos-label">2ªL</span></div>
-          <!-- FORWARDS ROW 3: 6,7,8 (back row) -->
-          <div class="pos-node" id="node-Ala Derecho"       style="left:60%;top:24%" onclick="openPosModal('Ala Derecho')"><span class="pos-num">6</span><span class="pos-label">A.Cie</span></div>
-          <div class="pos-node" id="node-Ala Izquierdo"       style="left:32%;top:24%" onclick="openPosModal('Ala Izquierdo')"><span class="pos-num">7</span><span class="pos-label">A.Abi</span></div>
-          <div class="pos-node" id="node-Octavo"            style="left:46%;top:33%" onclick="openPosModal('Octavo')"><span class="pos-num">8</span><span class="pos-label">Oct</span></div>
-          <!-- BACKS -->
-          <div class="pos-node" id="node-Medio Scrum"       style="left:60%;top:43%" onclick="openPosModal('Medio Scrum')"><span class="pos-num">9</span><span class="pos-label">M.Scr</span></div>
-          <div class="pos-node" id="node-Apertura"          style="left:46%;top:53%" onclick="openPosModal('Apertura')"><span class="pos-num">10</span><span class="pos-label">Aper</span></div>
-          <div class="pos-node" id="node-Primer Centro"     style="left:32%;top:63%" onclick="openPosModal('Primer Centro')"><span class="pos-num">12</span><span class="pos-label">1ºCen</span></div>
-          <div class="pos-node" id="node-Segundo Centro"    style="left:18%;top:70%" onclick="openPosModal('Segundo Centro')"><span class="pos-num">13</span><span class="pos-label">2ºCen</span></div>
-          <div class="pos-node" id="node-Wing Izquierdo"    style="left:4%;top:78%"  onclick="openPosModal('Wing Izquierdo')"><span class="pos-num">11</span><span class="pos-label">W.Izq</span></div>
-          <div class="pos-node" id="node-Wing Derecho"      style="left:74%;top:63%" onclick="openPosModal('Wing Derecho')"><span class="pos-num">14</span><span class="pos-label">W.Der</span></div>
-          <div class="pos-node" id="node-Fullback"          style="left:46%;top:84%" onclick="openPosModal('Fullback')"><span class="pos-num">15</span><span class="pos-label">FB</span></div>
-        </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:10px 10px 6px;overflow-x:auto;flex-shrink:0" id="team-tabs-row"></div>
+    <!-- Position list -->
+    <div style="flex:1;overflow-y:auto;padding:0 10px 8px" id="lineup-list-container">
+      <div style="margin-bottom:4px">
+        <div class="view-group-label" style="border-radius:10px 10px 0 0;margin-top:8px">Forwards (1–8)</div>
+        <div id="lineup-rows-fwd"></div>
+      </div>
+      <div>
+        <div class="view-group-label" style="border-radius:0">Backs (9–15)</div>
+        <div id="lineup-rows-bck"></div>
       </div>
     </div>
     <div style="padding:8px 10px;background:#fff;border-top:1px solid #ddd;display:flex;gap:8px;flex-shrink:0">
@@ -999,7 +997,8 @@ let planState = {
   playersPos:    [],   // from localStorage players_positions
   lineups:       [],   // from localStorage lineups
   activeTeamIdx: 0,
-  activePosModal: null // current position being assigned
+  activePosModal:  null, // current position being assigned
+  viewTeamIdx:     0
 };
 
 // ── HELPERS ────────────────────────────────────────────────
@@ -1106,7 +1105,7 @@ function getActiveLineup() {
 
 function initDefaultTeam() {
   if (planState.lineups.length === 0) {
-    planState.lineups = [{ team_id:'team_1', team_name:'Equipo A', positions:{} }];
+    planState.lineups = [{ team_id:'team_1', team_name:'Equipo 1', positions:{} }];
     saveToStorage();
   }
 }
@@ -1262,7 +1261,7 @@ async function savePositions() {
 // ── SECTION 2: LINEUP ─────────────────────────────────────
 function renderLineupSection() {
   renderTeamTabs();
-  renderField();
+  renderLineupList();
 }
 
 function renderTeamTabs() {
@@ -1283,10 +1282,9 @@ function selectTeam(idx) {
 
 function addTeam() {
   const n = planState.lineups.length + 1;
-  const letters = ['A','B','C','D','E','F'];
   planState.lineups.push({
     team_id: 'team_' + n,
-    team_name: 'Equipo ' + (letters[n-1] || n),
+    team_name: 'Equipo ' + n,
     positions: {}
   });
   saveToStorage(); // cache immediately
@@ -1296,31 +1294,34 @@ function addTeam() {
 }
 
 function renderField() {
+  renderLineupList();
+}
+
+function renderLineupList() {
   const lineup = getActiveLineup();
-  if (!lineup) return;
+  const fwdEl  = document.getElementById('lineup-rows-fwd');
+  const bckEl  = document.getElementById('lineup-rows-bck');
+  if (!fwdEl || !bckEl) return;
 
-  POSITIONS.forEach(pos => {
-    const node      = document.getElementById('node-' + pos);
-    if (!node) return;
-    const playerId  = lineup.positions[pos];
-    const numEl     = node.querySelector('.pos-num');
-    // Remove old player name tag
-    const oldTag = node.querySelector('.pos-player-name');
-    if (oldTag) oldTag.remove();
+  function makeRow(pos) {
+    const playerId = lineup ? lineup.positions[pos] : null;
+    const label    = playerId ? getPlayerLabel(playerId) : null;
+    const num      = POS_NUMBERS[pos];
+    return '<div class="lineup-row" onclick="openPosModal('' + pos.replace(/'/g, "\'") + '')">' +
+      '<div class="lineup-pos-num">' + num + '</div>' +
+      '<div class="lineup-pos-name">' + posLabel(pos) + '</div>' +
+      '<div class="lineup-player">' +
+        (label
+          ? '<span class="lineup-player-filled">' + label + '</span>'
+          : '<span class="lineup-player-empty">Tocar para asignar</span>'
+        ) +
+      '</div>' +
+      '<div class="lineup-chevron">›</div>' +
+    '</div>';
+  }
 
-    if (playerId) {
-      const pr = planState.playersPos.find(r => r.id === playerId);
-      const pl = planState.players.find(p => String(p.row) === playerId);
-      const label = pr?.apodo || pl?.apodo || playerId;
-      node.classList.add('filled');
-      const tag = document.createElement('div');
-      tag.className = 'pos-player-name';
-      tag.textContent = label;
-      node.appendChild(tag);
-    } else {
-      node.classList.remove('filled');
-    }
-  });
+  fwdEl.innerHTML = FORWARDS.map(makeRow).join('');
+  bckEl.innerHTML = BACKS.map(makeRow).join('');
 }
 
 async function saveLineup() {
@@ -1473,45 +1474,93 @@ function getPlayerLabel(playerId) {
 // ── SECTION 3: VIEW ───────────────────────────────────────
 function renderViewSection() {
   const container = document.getElementById('view-content');
-
   if (planState.lineups.length === 0) {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa">No hay equipos armados</div>';
     return;
   }
 
-  container.innerHTML = planState.lineups.map(team => {
-    const fwdRows = FORWARDS.map(pos => viewRow(pos, team)).join('');
-    const bakRows = BACKS.map(pos => viewRow(pos, team)).join('');
-    const filled  = Object.keys(team.positions).length;
+  const idx  = planState.viewTeamIdx || 0;
+  const team = planState.lineups[idx];
 
-    return '<div class="view-team-card">' +
+  const teamTabs = '<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px">' +
+    planState.lineups.map((t, i) =>
+      '<button class="team-tab' + (i === idx ? ' active' : '') + '" onclick="selectViewTeam(' + i + ')" ' +
+        'style="background:' + (i===idx ? '#002395' : '#fff') + ';color:' + (i===idx ? '#fff' : '#555') + ';' +
+        'border:1px solid ' + (i===idx ? '#002395' : '#ddd') + '">' + t.team_name + '</button>'
+    ).join('') + '</div>';
+
+  const filled   = Object.keys(team.positions).length;
+  const fieldHTML = buildFieldHTML(team);
+  const fwdRows  = FORWARDS.map(pos => viewRow(pos, team)).join('');
+  const bakRows  = BACKS.map(pos => viewRow(pos, team)).join('');
+
+  container.innerHTML = teamTabs +
+    '<div class="view-team-card">' +
       '<div class="view-team-header">' +
         '<span style="font-size:16px;font-weight:700">' + team.team_name + '</span>' +
         '<span style="font-size:12px;opacity:0.7">' + filled + '/15 posiciones</span>' +
       '</div>' +
+      '<div style="padding:10px;background:#f8f8f8;border-bottom:1px solid #eee">' + fieldHTML + '</div>' +
       '<div class="view-group-label">Forwards (1–8)</div>' + fwdRows +
       '<div class="view-group-label">Backs (9–15)</div>' + bakRows +
       '<div style="padding:10px">' +
-        '<button onclick="copyTeam(\'' + team.team_id + '\')" ' +
+        '<button onclick="copyTeam('' + team.team_id + '')" ' +
           'style="width:100%;padding:11px;background:#f0f2ff;border:1px solid #c0c8f0;' +
           'border-radius:10px;font-size:13px;font-weight:600;color:#002395;cursor:pointer">' +
-          '📋 Copiar para WhatsApp' +
-        '</button>' +
+          '📋 Copiar para WhatsApp</button>' +
       '</div>' +
     '</div>';
-  }).join('');
 }
 
-function viewRow(pos, team) {
-  const playerId = team.positions[pos];
-  const label    = playerId ? getPlayerLabel(playerId) : '—';
-  const num      = POS_NUMBERS[pos];
-  return '<div class="view-pos-row">' +
-    '<div class="view-pos-num">' + num + '</div>' +
-    '<div class="view-pos-name">' + posLabel(pos) + '</div>' +
-    '<div class="view-player-apodo">' + label + '</div>' +
-  '</div>';
+function selectViewTeam(idx) {
+  planState.viewTeamIdx = idx;
+  renderViewSection();
 }
+
+function buildFieldHTML(team) {
+  const nodes = [
+    {pos:'Pilar Izquierdo', num:1,  l:'32%',t:'4%' },
+    {pos:'Hooker',          num:2,  l:'46%',t:'4%' },
+    {pos:'Pilar Derecho',   num:3,  l:'60%',t:'4%' },
+    {pos:'Segunda Línea A', num:4,  l:'39%',t:'14%'},
+    {pos:'Segunda Línea B', num:5,  l:'53%',t:'14%'},
+    {pos:'Ala Derecho',     num:6,  l:'60%',t:'24%'},
+    {pos:'Ala Izquierdo',   num:7,  l:'32%',t:'24%'},
+    {pos:'Octavo',          num:8,  l:'46%',t:'33%'},
+    {pos:'Medio Scrum',     num:9,  l:'60%',t:'43%'},
+    {pos:'Apertura',        num:10, l:'46%',t:'52%'},
+    {pos:'Wing Izquierdo',  num:11, l:'4%', t:'76%'},
+    {pos:'Primer Centro',   num:12, l:'32%',t:'62%'},
+    {pos:'Segundo Centro',  num:13, l:'18%',t:'69%'},
+    {pos:'Wing Derecho',    num:14, l:'74%',t:'62%'},
+    {pos:'Fullback',        num:15, l:'46%',t:'83%'}
+  ];
+  const nodeHTML = nodes.map(n => {
+    const pid    = team.positions[n.pos];
+    const label  = pid ? getPlayerLabel(pid) : '';
+    const filled = !!pid;
+    return '<div style="position:absolute;left:' + n.l + ';top:' + n.t + ';transform:translate(-50%,-50%);' +
+      'display:flex;flex-direction:column;align-items:center;width:44px">' +
+      '<div style="width:32px;height:32px;border-radius:50%;' +
+        'background:' + (filled?'#1a472a':'#002395') + ';' +
+        'border:2px solid rgba(255,255,255,' + (filled?'0.9':'0.4') + ');' +
+        'color:#fff;font-size:11px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,0.4);' +
+        'display:flex;align-items:center;justify-content:center">' + n.num + '</div>' +
+      (label ? '<div style="font-size:7px;font-weight:700;color:#ffd700;background:rgba(0,0,0,0.55);' +
+        'border-radius:3px;padding:1px 3px;margin-top:1px;max-width:44px;overflow:hidden;' +
+        'text-overflow:ellipsis;white-space:nowrap;text-align:center">' + label + '</div>' : '') +
+    '</div>';
+  }).join('');
+  return '<div style="position:relative;width:100%;max-width:320px;margin:0 auto;' +
+    'background:linear-gradient(180deg,#2d7a3a 0%,#246b31 50%,#2d7a3a 100%);' +
+    'border-radius:10px;border:2px solid rgba(255,255,255,0.25);' +
+    'padding-bottom:110%;overflow:hidden">' +
+    '<div style="position:absolute;top:50%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.15)"></div>' +
+    '<div style="position:absolute;top:25%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.1)"></div>' +
+    '<div style="position:absolute;top:75%;left:5%;right:5%;height:1px;background:rgba(255,255,255,0.1)"></div>' +
+    nodeHTML + '</div>';
+}
+
 
 function copyTeam(teamId) {
   const team = planState.lineups.find(t => t.team_id === teamId);
