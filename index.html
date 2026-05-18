@@ -1509,7 +1509,7 @@ function renderViewSection() {
       '<div class="view-group-label">Forwards (1–8)</div>' + fwdRows +
       '<div class="view-group-label">Backs (9–15)</div>' + bakRows +
       '<div style="padding:10px">' +
-        '<button onclick="copyTeam('' + team.team_id + '')" ' +
+        '<button data-team-id="' + team.team_id + '" onclick="doCopyTeam(this)" ' +
           'style="width:100%;padding:11px;background:#f0f2ff;border:1px solid #c0c8f0;' +
           'border-radius:10px;font-size:13px;font-weight:600;color:#002395;cursor:pointer">' +
           '📋 Copiar para WhatsApp</button>' +
@@ -1566,6 +1566,10 @@ function buildFieldHTML(team) {
     nodeHTML + '</div>';
 }
 
+
+function doCopyTeam(btn) {
+  copyTeam(btn.getAttribute('data-team-id'));
+}
 
 function copyTeam(teamId) {
   const team = planState.lineups.find(t => t.team_id === teamId);
