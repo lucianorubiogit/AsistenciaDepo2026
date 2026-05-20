@@ -614,7 +614,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxgHNdr-rGE4UKTExq9SzG7_N3lI0hNAhzg_2UxQwO5wVxW58jiNGwEvOK1r08ScXPN/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzCsuKYMeKRQoNqhtSQ1Kbo-SqWDcZZAx29maN-lwTDLVRsOyQ7ngWeGi_ohCXyEpFy/exec";
 
 let state = {
   username:     "",
@@ -664,17 +664,26 @@ async function doLogin() {
   if (!username || !password) { errEl.textContent = "Ingresá usuario y contraseña"; return; }
 
   try {
+    // Combined login + getDates in one call — saves one round trip
     const res  = await fetch(API_URL, {
       method:  "POST",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ action: "login", username, password })
+      body: JSON.stringify({ action: "loginAndDates", username, password })
     });
     const data = JSON.parse(await res.text());
     if (!data.ok) { errEl.textContent = data.error; return; }
 
-    state.username = username;
-    state.password = password;
-    state.division = data.division;
+    state.username  = username;
+    state.password  = password;
+    state.division  = data.division;
+
+    // Pre-cache dates so Asistencia loads instantly
+    if (data.dates && data.dates.length > 0) {
+      state.dates     = data.dates;
+      state.sheetName = data.sheetName;
+      state._datesCached = true;
+    }
+
     showHomeScreen();
   } catch(e) {
     errEl.textContent = "Error de conexión. Revisá el link de la app.";
@@ -704,21 +713,34 @@ function showHomeScreen() {
 async function loadDatesScreen(monthOverride) {
   showScreen('dates');
   document.getElementById('dates-division').textContent  = state.division;
-  document.getElementById('dates-loading').style.display = 'flex';
   document.getElementById('date-list').style.display     = 'none';
 
-  // Update month button label
   const m = monthOverride !== undefined ? monthOverride : (new Date().getMonth() + 1);
   state.selectedMonth = m;
   document.getElementById('month-btn').textContent = '📅 ' + MONTHS_LONG[m - 1].toUpperCase();
 
+  // If we have cached dates from login and no override, show instantly
+  if (!monthOverride && state._datesCached && state.dates && state.dates.length > 0) {
+    document.getElementById('dates-loading').style.display = 'none';
+    document.getElementById('dates-sheet-name').textContent = state.sheetName;
+    renderDates(state.dates);
+    // Refresh in background silently
+    api({ action: "getDates" }).then(data => {
+      if (data.ok) { state.dates = data.dates; state.sheetName = data.sheetName; }
+    }).catch(() => {});
+    return;
+  }
+
+  document.getElementById('dates-loading').style.display = 'flex';
   try {
     const payload = { action: "getDates" };
     if (monthOverride !== undefined) payload.month = monthOverride;
     const data = await api(payload);
     if (!data.ok) { showToast("Error: " + data.error); return; }
-    state.dates     = data.dates;
-    state.sheetName = data.sheetName;
+    state.dates          = data.dates;
+    state.sheetName      = data.sheetName;
+    state._datesCached   = true;
+    document.getElementById('dates-loading').style.display = 'none';
     document.getElementById('dates-sheet-name').textContent = data.sheetName;
     renderDates(data.dates);
   } catch(e) {
@@ -831,8 +853,9 @@ async function selectDate(dateObj) {
 
 // ── ATTENDANCE ─────────────────────────────────────────────
 async function loadAttendanceScreen() {
-  // Reset completo antes de cargar
-  state.players = [];
+  // Only reset if switching to a different date
+  const newDateKey = state.selectedDate ? state.selectedDate.col : null;
+  if (state._lastLoadedDateCol !== newDateKey) state.players = [];
   showScreen('attendance');
   document.getElementById('att-loading').style.display = 'flex';
   document.getElementById('player-list').style.display = 'none';
@@ -865,6 +888,7 @@ async function loadAttendanceScreen() {
 
     // El servidor ya manda el status pre-cargado (o null si está vacío)
     state.players = data.players;
+    state._lastLoadedDateCol = state.selectedDate ? state.selectedDate.col : null;
     renderPlayers();
   } catch(e) {
     showToast("Error cargando jugadores");
@@ -1260,19 +1284,41 @@ async function enterPlanning() {
   // 1) Load cache immediately for fast render
   loadFromStorage();
 
-  // 2) Load players from server if needed
-  if (planState.players.length === 0 && state.players.length > 0) {
-    planState.players = state.players;
-  } else if (planState.players.length === 0) {
+  // 2+3) Combined call: players + planning data in one round trip
+  if (planState.players.length === 0 || planState.playersPos.length === 0) {
     try {
-      const shName = state.sheetName || "Mayo 26";
-      const data   = await api({ action:"getPlayers", dateCol:null, sheetName: shName });
-      if (data.ok) planState.players = data.players;
-    } catch(e) {}
+      const data = await api({ action: "planningInit" });
+      if (data.ok) {
+        if (data.players && data.players.length > 0) planState.players = data.players;
+        planState.playersPos = data.playersPos || planState.playersPos;
+        planState.lineups    = data.lineups    || planState.lineups;
+        // Update cache
+        localStorage.setItem('planning_cache', JSON.stringify({
+          playersPos: planState.playersPos,
+          lineups:    planState.lineups
+        }));
+      }
+    } catch(e) {
+      // Fallback to separate calls
+      if (planState.players.length === 0 && state.players.length > 0) {
+        planState.players = state.players;
+      }
+      await loadFromServer();
+    }
+  } else {
+    // Already have data — refresh in background
+    api({ action: "planningInit" }).then(data => {
+      if (data.ok) {
+        if (data.players && data.players.length > 0) planState.players = data.players;
+        planState.playersPos = data.playersPos || planState.playersPos;
+        planState.lineups    = data.lineups    || planState.lineups;
+        localStorage.setItem('planning_cache', JSON.stringify({
+          playersPos: planState.playersPos,
+          lineups:    planState.lineups
+        }));
+      }
+    }).catch(() => {});
   }
-
-  // 3) Load planning data from server (positions + lineups)
-  await loadFromServer();
 
   // 4) Sync any new players not yet in planState.playersPos
   syncPlayersPos();
