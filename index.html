@@ -511,13 +511,12 @@
 <div id="screen-dates" class="screen">
   <div class="header">
     <div class="header-sub" id="dates-division">M13</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div class="header-title" style="flex-shrink:0">Elegí la fecha</div>
-      <button onclick="enterPlanning()"
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <button onclick="showHomeScreen()"
         style="background:rgba(255,255,255,0.15);border:none;color:#fff;
-               padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;
+               padding:6px 10px;border-radius:20px;font-size:13px;font-weight:600;
                cursor:pointer;white-space:nowrap;flex-shrink:0">
-        📋 Planificación
+        ← Inicio
       </button>
       <button id="month-btn" onclick="openMonthPicker()"
         style="background:rgba(255,255,255,0.15);border:none;color:#fff;
@@ -1478,40 +1477,23 @@ async function enterPlanning() {
   // 1) Load cache immediately for fast render
   loadFromStorage();
 
-  // 2+3) Combined call: players + planning data in one round trip
-  if (planState.players.length === 0 || planState.playersPos.length === 0) {
-    try {
-      const data = await api({ action: "planningInit" });
-      if (data.ok) {
-        if (data.players && data.players.length > 0) planState.players = data.players;
-        planState.playersPos = data.playersPos || planState.playersPos;
-        planState.lineups    = data.lineups    || planState.lineups;
-        // Update cache
-        localStorage.setItem('planning_cache', JSON.stringify({
-          playersPos: planState.playersPos,
-          lineups:    planState.lineups
-        }));
-      }
-    } catch(e) {
-      // Fallback to separate calls
-      if (planState.players.length === 0 && state.players.length > 0) {
-        planState.players = state.players;
-      }
-      await loadFromServer();
+  // 2+3) Always fetch fresh data and WAIT before rendering
+  try {
+    const data = await api({ action: "planningInit" });
+    if (data.ok) {
+      if (data.players && data.players.length > 0) planState.players = data.players;
+      planState.playersPos = data.playersPos || planState.playersPos;
+      planState.lineups    = data.lineups    || planState.lineups;
+      localStorage.setItem('planning_cache', JSON.stringify({
+        playersPos: planState.playersPos,
+        lineups:    planState.lineups
+      }));
     }
-  } else {
-    // Already have data — refresh in background
-    api({ action: "planningInit" }).then(data => {
-      if (data.ok) {
-        if (data.players && data.players.length > 0) planState.players = data.players;
-        planState.playersPos = data.playersPos || planState.playersPos;
-        planState.lineups    = data.lineups    || planState.lineups;
-        localStorage.setItem('planning_cache', JSON.stringify({
-          playersPos: planState.playersPos,
-          lineups:    planState.lineups
-        }));
-      }
-    }).catch(() => {});
+  } catch(e) {
+    // Fallback: try cache or state.players
+    if (planState.players.length === 0 && state.players.length > 0) {
+      planState.players = state.players;
+    }
   }
 
   // 4) Sync any new players not yet in planState.playersPos
