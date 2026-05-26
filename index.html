@@ -592,7 +592,7 @@
     <div class="header-sub">Rugby Infantil ADF</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div class="header-title">Planificación</div>
-      <button onclick="showScreen('dates')"
+      <button onclick="showHomeScreen()"
         style="background:rgba(255,255,255,0.15);border:none;color:#fff;
                padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
         ← Volver
@@ -736,7 +736,7 @@
 
     <!-- Visitantes -->
     <div class="fix-card">
-      <div class="fix-card-title">✈️ Clubes Visitantes</div>
+      <div class="fix-card-title">🏉 Clubes Visitantes</div>
       <div id="fix-visitors-list"></div>
       <button onclick="addVisitor()" id="fix-add-visitor-btn"
         style="width:100%;padding:10px;background:#f0f2ff;border:1px dashed #7b8fd4;
@@ -1991,10 +1991,30 @@ let fixState = {
 let fixVisitorCounter = 0;
 
 // ── ENTRY ─────────────────────────────────────────────────
-function enterFixture() {
+async function enterFixture() {
   showScreen('fixture');
   document.getElementById('fix-division').textContent = state.division || 'M13';
   switchFixTab('config');
+
+  // Load planning data if lineups not yet in memory
+  if (!planState.lineups || planState.lineups.length === 0) {
+    try {
+      const data = await api({ action: 'planningInit' });
+      if (data.ok) {
+        if (data.players && data.players.length > 0) planState.players = data.players;
+        planState.playersPos = data.playersPos || planState.playersPos;
+        planState.lineups    = data.lineups    || [];
+        localStorage.setItem('planning_cache', JSON.stringify({
+          playersPos: planState.playersPos,
+          lineups:    planState.lineups
+        }));
+      }
+    } catch(e) {
+      // Fall back to cache
+      loadFromStorage();
+    }
+  }
+
   renderDepoTeams();
   if (fixState.visitors.length === 0) addVisitor();
 }
