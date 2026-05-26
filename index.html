@@ -441,6 +441,9 @@
 .fix-warning.error {
   background:#fff5f5;border-color:#ef9a9a;color:#7f1d1d;
 }
+.fix-warning.ok {
+  background:#f1f8f1;border-color:#81c784;color:#1a472a;
+}
 
 </style>
 </head>
@@ -1458,7 +1461,7 @@ function getActiveLineup() {
 
 function initDefaultTeam() {
   if (planState.lineups.length === 0) {
-    planState.lineups = [{ team_id:'team_1', team_name:'Equipo 1', positions:{} }];
+    planState.lineups = [{ team_id:'team_1', team_name:'Depo 1', positions:{} }];
     saveToStorage();
   }
 }
@@ -1659,7 +1662,7 @@ function addTeam() {
   const n = planState.lineups.length + 1;
   planState.lineups.push({
     team_id: 'team_' + n,
-    team_name: 'Equipo ' + n,
+    team_name: 'Depo ' + n,
     positions: {}
   });
   saveToStorage(); // cache immediately
@@ -2161,148 +2164,165 @@ function generateFixture() {
 
 // ── ROUND ROBIN BUILDER ───────────────────────────────────
 function buildRoundRobin(allTeams, depoTeams) {
-  const matches = [];
-  const depoIds = new Set(depoTeams.map(t => t.id));
+  const matches  = [];
+  const depoIds  = new Set(depoTeams.map(t => t.id));
+  const pairSet  = new Set();
 
-  // PRIORITY MATCHES: level-1 teams first
-  // Depo level-1 vs visitor level-1
-  const depo1   = allTeams.filter(t => depoIds.has(t.id) && t.level === 1);
-  const vis1    = allTeams.filter(t => !depoIds.has(t.id) && t.level === 1);
-  const pairSet = new Set();
-
-  function addMatch(a, b, priority) {
+  function tryAdd(a, b, priority) {
     const key = [a.id, b.id].sort().join('|');
     if (!pairSet.has(key)) {
       pairSet.add(key);
       matches.push({ home: a, away: b, priority });
+      return true;
     }
+    return false;
   }
 
-  // Priority 1: Depo-1 vs each visitor-1
-  depo1.forEach(d => vis1.forEach(v => addMatch(d, v, 1)));
+  // Priority 1: level-1 depo vs level-1 visitors
+  const depo1 = allTeams.filter(t => depoIds.has(t.id) && t.level === 1);
+  const vis1  = allTeams.filter(t => !depoIds.has(t.id) && t.level === 1);
+  depo1.forEach(d => vis1.forEach(v => tryAdd(d, v, 1)));
 
-  // Priority 2: all remaining combinations (avoid same-club, avoid already added)
+  // Priority 2: all other cross-club pairs
   for (let i = 0; i < allTeams.length; i++) {
     for (let j = i + 1; j < allTeams.length; j++) {
       const a = allTeams[i], b = allTeams[j];
-      if (a.club === b.club) continue; // avoid same club
-      addMatch(a, b, 2);
+      if (a.club === b.club) continue;
+      tryAdd(a, b, 2);
     }
   }
 
-  // Sort: priority 1 first, then priority 2
   matches.sort((a, b) => a.priority - b.priority);
   return matches;
 }
 
 // ── SCHEDULER ─────────────────────────────────────────────
 function scheduleMatches(matches, numCourts, slotSize, startMin, limitMin, duration, depoTeams) {
-  const depoIds    = new Set(depoTeams.map(t => t.id));
-  const courtNext  = Array(numCourts).fill(startMin); // next available time per court
-  const teamNext   = {};                               // next available time per team
-  const teamMins   = {};                               // total played minutes per team
-  const scheduled  = [];
-  const unscheduled = [...matches];
+  const depoIds   = new Set(depoTeams.map(t => t.id));
+  const scheduled = [];
 
-  // Assign Depo teams to their "home" court (court 0 = Depo teams' preferred court)
-  // Visitors rotate
+  // ── STEP 1: Calculate capacity ──────────────────────────
+  // How many total slots fit within the time window per court?
+  const hasLimit    = limitMin !== Infinity;
+  const windowMins  = hasLimit ? (limitMin - startMin) : null;
 
-  let attempts = 0;
-  while (unscheduled.length > 0 && attempts < unscheduled.length * 10) {
+  // Each court can hold floor((window) / slotSize) slots
+  // But last slot doesn't need interval — just duration
+  function slotsPerCourt(window) {
+    if (!window) return Infinity;
+    let count = 0, t = 0;
+    while (t + duration <= window) { count++; t += slotSize; }
+    return count;
+  }
+
+  const courtCapacity = hasLimit ? slotsPerCourt(windowMins) : Infinity;
+  const totalCapacity = hasLimit ? courtCapacity * numCourts : matches.length;
+
+  // ── STEP 2: Fair distribution ───────────────────────────
+  // Determine max games per team so distribution is even
+  const allTeamIds  = [...new Set(matches.flatMap(m => [m.home.id, m.away.id]))];
+  const numTeams    = allTeamIds.length;
+
+  // Target: distribute totalCapacity games as evenly as possible
+  // Each game uses 2 team-slots, so total team-slots = totalCapacity * 2
+  // Max per team = ceil((totalCapacity * 2) / numTeams)
+  const maxGamesPerTeam = hasLimit
+    ? Math.ceil((totalCapacity * 2) / numTeams)
+    : Infinity;
+
+  // ── STEP 3: Schedule with constraints ───────────────────
+  const courtNext = Array(numCourts).fill(startMin);
+  const teamNext  = {};   // earliest next start time per team
+  const teamCount = {};   // games played per team
+  const teamMins  = {};   // total minutes played per team
+  allTeamIds.forEach(id => { teamNext[id] = startMin; teamCount[id] = 0; teamMins[id] = 0; });
+
+  // Work from a queue; try each match in priority order
+  const queue = [...matches];
+
+  let safetyMax = queue.length * (numCourts + 2);
+  let attempts  = 0;
+
+  while (queue.length > 0 && attempts < safetyMax) {
     attempts++;
     let placed = false;
 
-    for (let mi = 0; mi < unscheduled.length; mi++) {
-      const match = unscheduled[mi];
+    for (let mi = 0; mi < queue.length; mi++) {
+      const match        = queue[mi];
       const { home, away } = match;
 
-      // Find earliest court where both teams are free
+      // Skip if either team already at max games
+      if ((teamCount[home.id] || 0) >= maxGamesPerTeam) continue;
+      if ((teamCount[away.id] || 0) >= maxGamesPerTeam) continue;
+
+      // Find best court for this match
+      let bestCourt = -1, bestStart = Infinity;
+
       for (let c = 0; c < numCourts; c++) {
-        const courtTime = courtNext[c];
-        const homeReady = teamNext[home.id] || startMin;
-        const awayReady = teamNext[away.id] || startMin;
-        const slotStart = Math.max(courtTime, homeReady, awayReady);
+        const earliest = Math.max(
+          courtNext[c],
+          teamNext[home.id] || startMin,
+          teamNext[away.id] || startMin
+        );
 
-        // Check: Depo teams can't play simultaneously on different courts
-        const depoConflict = checkDepoConflict(home, away, slotStart, duration, depoIds, scheduled);
-        if (depoConflict) continue;
+        // Hard limit: don't start after limit
+        if (hasLimit && earliest + duration > limitMin) continue;
 
-        // Prefer court 0 for Depo matches, other courts for visitor-only matches
+        // Depo conflict: no two Depo teams overlap on any court
+        if (hasDepoConflict(home, away, earliest, duration, depoIds, scheduled)) continue;
+
+        // Prefer court 0 for Depo matches, court 1 for visitor-only
         const isDepoMatch = depoIds.has(home.id) || depoIds.has(away.id);
-        const preferredCourt = isDepoMatch ? 0 : (numCourts > 1 ? 1 : 0);
+        const preferred   = isDepoMatch ? 0 : Math.min(1, numCourts - 1);
+        const score       = earliest + (c === preferred ? 0 : 1); // slight preference
 
-        // Try preferred court first, then any court
-        const tryC = (mi === 0 && c === 0) ? preferredCourt : c;
-
-        const finalStart = Math.max(courtNext[tryC], homeReady, awayReady);
-        const depoConflict2 = checkDepoConflict(home, away, finalStart, duration, depoIds, scheduled);
-        if (depoConflict2) continue;
-
-        // Schedule it
-        scheduled.push({
-          court:     tryC,
-          startMin:  finalStart,
-          endMin:    finalStart + duration,
-          home:      home.name,
-          away:      away.name,
-          homeId:    home.id,
-          awayId:    away.id,
-          overLimit: limitMin !== Infinity && (finalStart + duration) > limitMin
-        });
-
-        courtNext[tryC]    = finalStart + slotSize;
-        teamNext[home.id]  = finalStart + slotSize;
-        teamNext[away.id]  = finalStart + slotSize;
-        teamMins[home.id]  = (teamMins[home.id] || 0) + duration;
-        teamMins[away.id]  = (teamMins[away.id] || 0) + duration;
-
-        unscheduled.splice(mi, 1);
-        placed = true;
-        break;
+        if (earliest < bestStart || (earliest === bestStart && c === preferred)) {
+          bestStart = earliest;
+          bestCourt = c;
+        }
       }
-      if (placed) break;
-    }
 
-    if (!placed) {
-      // Force-place the first unscheduled match on earliest available court
-      const match = unscheduled[0];
-      const { home, away } = match;
-      let bestC = 0, bestTime = Infinity;
-      for (let c = 0; c < numCourts; c++) {
-        const t = Math.max(courtNext[c], teamNext[home.id] || startMin, teamNext[away.id] || startMin);
-        if (t < bestTime) { bestTime = t; bestC = c; }
-      }
+      if (bestCourt === -1) continue; // no valid slot found for this match now
+
+      // Place the match
       scheduled.push({
-        court: bestC, startMin: bestTime, endMin: bestTime + duration,
-        home: home.name, away: away.name, homeId: home.id, awayId: away.id,
-        overLimit: limitMin !== Infinity && (bestTime + duration) > limitMin
+        court:     bestCourt,
+        startMin:  bestStart,
+        endMin:    bestStart + duration,
+        home:      home.name,
+        away:      away.name,
+        homeId:    home.id,
+        awayId:    away.id,
+        overLimit: false  // already filtered above
       });
-      courtNext[bestC]   = bestTime + slotSize;
-      teamNext[home.id]  = bestTime + slotSize;
-      teamNext[away.id]  = bestTime + slotSize;
-      teamMins[home.id]  = (teamMins[home.id] || 0) + duration;
-      teamMins[away.id]  = (teamMins[away.id] || 0) + duration;
-      unscheduled.shift();
+
+      courtNext[bestCourt]   = bestStart + slotSize;
+      teamNext[home.id]      = bestStart + slotSize;
+      teamNext[away.id]      = bestStart + slotSize;
+      teamCount[home.id]     = (teamCount[home.id] || 0) + 1;
+      teamCount[away.id]     = (teamCount[away.id] || 0) + 1;
+      teamMins[home.id]      = (teamMins[home.id]  || 0) + duration;
+      teamMins[away.id]      = (teamMins[away.id]  || 0) + duration;
+
+      queue.splice(mi, 1);
+      placed = true;
+      break;
     }
+
+    if (!placed) break; // no match could be placed — done
   }
 
-  // Attach team minute totals for warnings
-  scheduled._teamMins = teamMins;
+  scheduled._teamMins   = teamMins;
+  scheduled._teamCount  = teamCount;
   return scheduled;
 }
 
-function checkDepoConflict(home, away, startMin, duration, depoIds, scheduled) {
-  const isDepoHome = depoIds.has(home.id);
-  const isDepoAway = depoIds.has(away.id);
-  if (!isDepoHome && !isDepoAway) return false;
-
-  // Check if any other Depo team is playing in overlapping time on any court
+function hasDepoConflict(home, away, startMin, duration, depoIds, scheduled) {
+  if (!depoIds.has(home.id) && !depoIds.has(away.id)) return false;
   for (const s of scheduled) {
-    const otherDepo = (depoIds.has(s.homeId) || depoIds.has(s.awayId));
-    if (!otherDepo) continue;
-    // Time overlap?
-    const overlap = startMin < s.endMin && (startMin + duration) > s.startMin;
-    if (overlap) return true;
+    if (!depoIds.has(s.homeId) && !depoIds.has(s.awayId)) continue;
+    // Overlap check
+    if (startMin < s.endMin && startMin + duration > s.startMin) return true;
   }
   return false;
 }
@@ -2315,27 +2335,33 @@ function minToTime(min) {
 }
 
 function renderFixtureResult(schedule, numCourts, duration, startMin, limitMin) {
-  // Warnings
-  const warnEl = document.getElementById('fix-warnings');
-  const teamMins = schedule._teamMins || {};
+  const warnEl   = document.getElementById('fix-warnings');
+  const teamMins = schedule._teamMins  || {};
+  const teamCount= schedule._teamCount || {};
   const warnings = [];
 
+  // Warn if any team exceeds 60 min
   Object.entries(teamMins).forEach(([id, mins]) => {
     if (mins > 60) {
-      // Find team name
       const name = schedule.find(s => s.homeId === id)?.home ||
                    schedule.find(s => s.awayId === id)?.away || id;
-      warnings.push({ text: '⚠️ ' + name + ' supera 60 min de actividad (' + mins + ' min)', type: 'warn' });
+      warnings.push({ text: '⚠️ ' + name + ' supera 60 min (' + mins + ' min)', type: 'warn' });
     }
   });
 
-  const overCount = schedule.filter(s => s.overLimit).length;
-  if (overCount > 0) {
-    warnings.push({ text: '🔴 ' + overCount + ' partido(s) superan el horario límite', type: 'error' });
+  // Show game count distribution
+  const counts = Object.values(teamCount);
+  if (counts.length > 0) {
+    const min = Math.min(...counts), max = Math.max(...counts);
+    if (max - min > 1) {
+      warnings.push({ text: '⚠️ Distribución despareja: equipos con ' + min + ' a ' + max + ' partidos', type: 'warn' });
+    } else {
+      warnings.push({ text: '✅ Cada equipo juega ' + min + (max > min ? '-' + max : '') + ' partido(s)', type: 'ok' });
+    }
   }
 
   warnEl.innerHTML = warnings.map(w =>
-    '<div class="fix-warning' + (w.type === 'error' ? ' error' : '') + '">' + w.text + '</div>'
+    '<div class="fix-warning' + (w.type === 'error' ? ' error' : w.type === 'ok' ? ' ok' : '') + '">' + w.text + '</div>'
   ).join('');
 
   // Courts
