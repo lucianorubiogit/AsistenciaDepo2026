@@ -2688,10 +2688,11 @@ function onThresholdChange(val) {
 function computePlayerStats(playerName, months) {
   let presente = 0, lesionado = 0, ausente = 0, aviso = 0, total = 0;
 
+  const normPlayer = normName(playerName);
   months.forEach(m => {
     const monthData = statsState.rawData[m];
     if (!monthData) return;
-    const p = monthData.players.find(p => p.name === playerName);
+    const p = monthData.players.find(p => normName(p.name) === normPlayer);
     if (!p) return;
     Object.values(p.records).forEach(status => {
       if (!status) return;
@@ -2709,11 +2710,20 @@ function computePlayerStats(playerName, months) {
 }
 
 // Get all unique players across all loaded months
+function normName(name) {
+  return String(name).trim().toLowerCase();
+}
+
 function getAllPlayers() {
-  const map = {};
+  const map = {}; // key: normalized name → { name, apodo, normKey }
   Object.values(statsState.rawData).forEach(monthData => {
     monthData.players.forEach(p => {
-      if (!map[p.name]) map[p.name] = { name: p.name, apodo: p.apodo };
+      const key = normName(p.name);
+      if (!map[key]) {
+        map[key] = { name: p.name, apodo: p.apodo, normKey: key };
+      } else if (!map[key].apodo && p.apodo) {
+        map[key].apodo = p.apodo; // fill in apodo if missing
+      }
     });
   });
   return Object.values(map).sort((a,b) =>
@@ -2877,7 +2887,7 @@ function playerRowHTML(p, threshold) {
 
 // ── PLAYER MODAL ──────────────────────────────────────────
 function openStatsModal(playerName) {
-  const player  = getAllPlayers().find(p => p.name === playerName);
+  const player  = getAllPlayers().find(p => normName(p.name) === normName(playerName));
   if (!player) return;
 
   document.getElementById('stats-modal-name').textContent  = playerName;
