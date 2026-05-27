@@ -445,6 +445,85 @@
   background:#f1f8f1;border-color:#81c784;color:#1a472a;
 }
 
+/* ── STATS ── */
+.stats-card {
+  background:#fff;border-radius:13px;padding:14px;
+  margin-bottom:10px;border:1px solid #eee;
+}
+.stats-card-title {
+  font-size:12px;font-weight:700;color:#888;
+  text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;
+}
+
+/* Team chart bars */
+.stats-month-bar-wrap {
+  display:flex;align-items:flex-end;gap:6px;
+  height:100px;padding:0 4px;
+}
+.stats-month-col {
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;gap:4px;cursor:pointer;
+}
+.stats-month-col.selected .stats-month-bar { opacity:1 !important; outline:2px solid #002395; }
+.stats-month-bar {
+  width:100%;border-radius:6px 6px 0 0;
+  background:linear-gradient(180deg,#002395,#4b6cb7);
+  opacity:0.7;transition:opacity 0.15s;min-height:4px;
+}
+.stats-month-label { font-size:10px;color:#888;font-weight:600;white-space:nowrap; }
+.stats-month-pct   { font-size:10px;color:#002395;font-weight:700; }
+
+/* Player rows */
+.stats-player-row {
+  padding:12px 14px;border-bottom:1px solid #f5f5f5;
+  cursor:pointer;transition:background 0.1s;
+}
+.stats-player-row:last-child { border-bottom:none; }
+.stats-player-row:active { background:#f8f8ff; }
+.stats-player-name  { font-size:14px;font-weight:600;color:#333;margin-bottom:2px; }
+.stats-player-apodo { font-size:12px;color:#aaa; }
+.stats-bar-wrap {
+  display:flex;align-items:center;gap:8px;margin-top:6px;
+}
+.stats-bar-bg {
+  flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;
+}
+.stats-bar-fill {
+  height:100%;border-radius:4px;
+  transition:width 0.4s ease;
+}
+.stats-bar-pct { font-size:13px;font-weight:700;width:38px;text-align:right; }
+.stats-bar-fill.above { background:linear-gradient(90deg,#1a472a,#2d9e5f); }
+.stats-bar-fill.below { background:linear-gradient(90deg,#b71c1c,#e53935); }
+.stats-bar-pct.above  { color:#1a472a; }
+.stats-bar-pct.below  { color:#b71c1c; }
+
+/* Status mini pills in player row */
+.stats-mini-pills { display:flex;gap:4px;flex-wrap:wrap;margin-top:5px; }
+.stats-mini-pill  {
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;
+}
+.smp-p  { background:#e8f5e9;color:#1a472a; }
+.smp-l  { background:#fff8f0;color:#e65100; }
+.smp-a  { background:#fff5f5;color:#b71c1c; }
+.smp-av { background:#f0f7ff;color:#1565c0; }
+
+/* Modal detail */
+.stats-month-detail {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid #f5f5f5;
+}
+.stats-month-detail:last-child { border-bottom:none; }
+.stats-month-name { font-size:14px;font-weight:600;color:#333;width:80px;flex-shrink:0; }
+.stats-detail-bar-bg {
+  flex:1;height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;
+}
+.stats-detail-bar-fill {
+  height:100%;border-radius:5px;
+  background:linear-gradient(90deg,#002395,#4b6cb7);
+}
+.stats-detail-pct { font-size:13px;font-weight:700;color:#002395;width:38px;text-align:right; }
+
 </style>
 </head>
 <body>
@@ -517,6 +596,12 @@
                padding:6px 10px;border-radius:20px;font-size:13px;font-weight:600;
                cursor:pointer;white-space:nowrap;flex-shrink:0">
         ← Inicio
+      </button>
+      <button onclick="enterStats()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 10px;border-radius:20px;font-size:13px;font-weight:600;
+               cursor:pointer;white-space:nowrap;flex-shrink:0;flex:1;text-align:center">
+        📊 Estadísticas
       </button>
       <button id="month-btn" onclick="openMonthPicker()"
         style="background:rgba(255,255,255,0.15);border:none;color:#fff;
@@ -804,10 +889,103 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     STATS SCREEN
+     ═══════════════════════════════════════════════════════ -->
+<div id="screen-stats" class="screen">
+  <div class="header">
+    <div class="header-sub" id="stats-division">M13</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">Estadísticas</div>
+      <button onclick="showScreen('dates')"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
+        ← Volver
+      </button>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:12px" id="stats-body">
+
+    <!-- Loading -->
+    <div id="stats-loading" class="loading">
+      <div class="spinner"></div>
+      <span>Cargando datos…</span>
+    </div>
+
+    <!-- Content (hidden until loaded) -->
+    <div id="stats-content" style="display:none">
+
+      <!-- Umbral configurable -->
+      <div class="stats-card">
+        <div class="stats-card-title">⚙️ Umbral de asistencia</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+          <input type="range" id="stats-threshold" min="0" max="100" value="75"
+            oninput="onThresholdChange(this.value)"
+            style="flex:1;accent-color:#002395">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" id="stats-threshold-num" min="0" max="100" value="75"
+              oninput="onThresholdChange(this.value)"
+              style="width:56px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;
+                     font-size:16px;font-weight:700;color:#002395;text-align:center">
+            <span style="font-size:16px;font-weight:700;color:#002395">%</span>
+          </div>
+        </div>
+        <div id="stats-threshold-summary" style="font-size:12px;color:#888;margin-top:4px"></div>
+      </div>
+
+      <!-- Team summary chart -->
+      <div class="stats-card">
+        <div class="stats-card-title">📈 Evolución del equipo por mes</div>
+        <div id="stats-team-chart" style="margin-top:8px"></div>
+      </div>
+
+      <!-- Period selector -->
+      <div class="stats-card" style="padding:10px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:#444">Período</span>
+          <select id="stats-period" onchange="renderPlayerList()"
+            style="flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:8px;
+                   font-size:13px;max-width:200px">
+            <option value="all">Toda la temporada</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Player list -->
+      <div class="stats-card" style="padding:0;overflow:hidden">
+        <div style="padding:12px 14px 8px;border-bottom:1px solid #f0f0f0">
+          <div class="stats-card-title" style="margin-bottom:0">👥 Jugadores</div>
+        </div>
+        <div id="stats-player-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- PLAYER DETAIL MODAL -->
+<div class="modal-bg" id="stats-modal" onclick="closeStatsModal(event)">
+  <div class="modal" onclick="event.stopPropagation()"
+    style="max-height:85vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div id="stats-modal-name"
+      style="font-size:17px;font-weight:700;color:#002395;margin-bottom:2px"></div>
+    <div id="stats-modal-apodo"
+      style="font-size:13px;color:#aaa;margin-bottom:16px"></div>
+    <div id="stats-modal-body"></div>
+    <button onclick="closeStatsModal()"
+      style="width:100%;padding:12px;background:#f5f5f5;border:1px solid #ddd;
+             border-radius:12px;font-size:14px;cursor:pointer;margin-top:12px">
+      Cerrar
+    </button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbw_nNP8NA799hjLwHhjQ6qRnCdMhWMsqfOXKJVYwnrcPdkJJoYMdcBcBz9FK7WxUckj/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzMEP1udkt-xukeZB9tpzgIQWu-XifGHbQFfuGeKCax8fv8-58m0Nhr2XHgJoW5TcG1/exec";
 
 let state = {
   username:     "",
@@ -2418,6 +2596,345 @@ async function clearFixtureSheet() {
   } catch(e) {
     showToast('Error de conexión');
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// STATS MODULE
+// ════════════════════════════════════════════════════════════
+
+const MONTH_NAMES = {
+  2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+  7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre'
+};
+const MONTH_SHORT = {
+  2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',
+  7:'Jul',8:'Ago',9:'Sep',10:'Oct'
+};
+
+let statsState = {
+  rawData:   {},  // { monthNum: { sheetName, dates:[str], players:[{name,apodo,records:{date:status}}] } }
+  threshold: 75,
+  selectedMonth: null  // null = all
+};
+
+// ── ENTRY ─────────────────────────────────────────────────
+async function enterStats() {
+  showScreen('stats');
+  document.getElementById('stats-division').textContent = state.division || 'M13';
+  document.getElementById('stats-loading').style.display = 'flex';
+  document.getElementById('stats-content').style.display = 'none';
+
+  await loadAllStatsData();
+
+  document.getElementById('stats-loading').style.display = 'none';
+  document.getElementById('stats-content').style.display = 'block';
+
+  buildPeriodSelector();
+  renderTeamChart();
+  renderPlayerList();
+}
+
+// ── DATA LOADING ──────────────────────────────────────────
+async function loadAllStatsData() {
+  statsState.rawData = {};
+
+  // Load all months in parallel
+  const months = Object.keys(MONTH_NAMES).map(Number);
+  const results = await Promise.allSettled(
+    months.map(m => api({ action: 'getSheetData', month: m }))
+  );
+
+  results.forEach((result, i) => {
+    const month = months[i];
+    if (result.status === 'fulfilled' && result.value.ok) {
+      const d = result.value;
+      if (d.players && d.players.length > 0) {
+        statsState.rawData[month] = {
+          sheetName: d.sheetName,
+          dates:     d.dates,
+          players:   d.players
+        };
+      }
+    }
+  });
+}
+
+// ── PERIOD SELECTOR ───────────────────────────────────────
+function buildPeriodSelector() {
+  const sel = document.getElementById('stats-period');
+  const months = Object.keys(statsState.rawData).map(Number).sort((a,b)=>a-b);
+
+  // Clear and rebuild
+  sel.innerHTML = '<option value="all">Toda la temporada</option>';
+  months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = MONTH_NAMES[m];
+    sel.appendChild(opt);
+  });
+}
+
+// ── THRESHOLD ─────────────────────────────────────────────
+function onThresholdChange(val) {
+  val = Math.max(0, Math.min(100, parseInt(val) || 0));
+  statsState.threshold = val;
+  document.getElementById('stats-threshold').value = val;
+  document.getElementById('stats-threshold-num').value = val;
+  renderPlayerList();
+}
+
+// ── COMPUTE STATS ─────────────────────────────────────────
+// Returns { presente, lesionado, ausente, aviso, total, pct } for a player in given months
+function computePlayerStats(playerName, months) {
+  let presente = 0, lesionado = 0, ausente = 0, aviso = 0, total = 0;
+
+  months.forEach(m => {
+    const monthData = statsState.rawData[m];
+    if (!monthData) return;
+    const p = monthData.players.find(p => p.name === playerName);
+    if (!p) return;
+    Object.values(p.records).forEach(status => {
+      if (!status) return;
+      total++;
+      const s = status.toLowerCase();
+      if (s === 'presente')            presente++;
+      else if (s === 'lesionado presente') lesionado++;
+      else if (s === 'ausente')            ausente++;
+      else if (s.includes('aviso'))        aviso++;
+    });
+  });
+
+  const pct = total > 0 ? Math.round((presente + lesionado) / total * 100) : 0;
+  return { presente, lesionado, ausente, aviso, total, pct };
+}
+
+// Get all unique players across all loaded months
+function getAllPlayers() {
+  const map = {};
+  Object.values(statsState.rawData).forEach(monthData => {
+    monthData.players.forEach(p => {
+      if (!map[p.name]) map[p.name] = { name: p.name, apodo: p.apodo };
+    });
+  });
+  return Object.values(map).sort((a,b) =>
+    (a.apodo||a.name).localeCompare(b.apodo||b.name)
+  );
+}
+
+function getSelectedMonths() {
+  const val = document.getElementById('stats-period')?.value || 'all';
+  const allMonths = Object.keys(statsState.rawData).map(Number);
+  return val === 'all' ? allMonths : [parseInt(val)];
+}
+
+// ── TEAM CHART ────────────────────────────────────────────
+function renderTeamChart() {
+  const el      = document.getElementById('stats-team-chart');
+  const months  = Object.keys(statsState.rawData).map(Number).sort((a,b)=>a-b);
+
+  if (months.length === 0) {
+    el.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px">Sin datos cargados</div>';
+    return;
+  }
+
+  // Compute team avg per month
+  const monthStats = months.map(m => {
+    const monthData = statsState.rawData[m];
+    const players   = monthData.players;
+    let totalPct    = 0, count = 0;
+
+    players.forEach(p => {
+      const s = computePlayerStats(p.name, [m]);
+      if (s.total > 0) { totalPct += s.pct; count++; }
+    });
+
+    const avgPct     = count > 0 ? Math.round(totalPct / count) : 0;
+    const numDates   = monthData.dates.length;
+    return { month: m, avgPct, numDates, count };
+  });
+
+  const maxPct = 100;
+  const chartH = 90; // px
+
+  let html = '<div class="stats-month-bar-wrap">';
+  monthStats.forEach(ms => {
+    const barH     = Math.max(4, Math.round((ms.avgPct / maxPct) * chartH));
+    const selected = statsState.selectedMonth === ms.month ? ' selected' : '';
+    html +=
+      '<div class="stats-month-col' + selected + '" onclick="selectChartMonth(' + ms.month + ')">' +
+        '<div class="stats-month-pct">' + ms.avgPct + '%</div>' +
+        '<div class="stats-month-bar" style="height:' + barH + 'px"></div>' +
+        '<div class="stats-month-label">' + MONTH_SHORT[ms.month] + '</div>' +
+        '<div style="font-size:9px;color:#bbb">' + ms.numDates + 'f</div>' +
+      '</div>';
+  });
+  html += '</div>';
+
+  // Summary row
+  const allMonths  = months;
+  const allPlayers = getAllPlayers();
+  let teamPres = 0, teamTotal = 0;
+  allPlayers.forEach(p => {
+    const s = computePlayerStats(p.name, allMonths);
+    teamPres  += s.presente + s.lesionado;
+    teamTotal += s.total;
+  });
+  const teamPct = teamTotal > 0 ? Math.round(teamPres / teamTotal * 100) : 0;
+
+  html += '<div style="margin-top:10px;padding:10px 4px;background:#f0f2ff;border-radius:8px;' +
+    'display:flex;justify-content:space-between;align-items:center">' +
+    '<span style="font-size:12px;color:#555;font-weight:600">Promedio temporada</span>' +
+    '<span style="font-size:18px;font-weight:700;color:#002395">' + teamPct + '%</span>' +
+    '</div>';
+
+  el.innerHTML = html;
+}
+
+function selectChartMonth(month) {
+  if (statsState.selectedMonth === month) {
+    statsState.selectedMonth = null;
+    document.getElementById('stats-period').value = 'all';
+  } else {
+    statsState.selectedMonth = month;
+    document.getElementById('stats-period').value = month;
+  }
+  renderTeamChart();
+  renderPlayerList();
+}
+
+// ── PLAYER LIST ───────────────────────────────────────────
+function renderPlayerList() {
+  const el        = document.getElementById('stats-player-list');
+  const months    = getSelectedMonths();
+  const players   = getAllPlayers();
+  const threshold = statsState.threshold;
+
+  if (players.length === 0) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa">Sin datos</div>';
+    return;
+  }
+
+  // Compute stats for each player
+  const withStats = players.map(p => ({
+    ...p,
+    stats: computePlayerStats(p.name, months)
+  })).filter(p => p.stats.total > 0);
+
+  // Sort by pct descending
+  withStats.sort((a,b) => b.stats.pct - a.stats.pct);
+
+  const above = withStats.filter(p => p.stats.pct >= threshold);
+  const below  = withStats.filter(p => p.stats.pct <  threshold);
+
+  // Update threshold summary
+  document.getElementById('stats-threshold-summary').textContent =
+    above.length + ' jugadores ≥ ' + threshold + '% · ' +
+    below.length  + ' por debajo';
+
+  let html = '';
+
+  // Above threshold
+  if (above.length > 0) {
+    html += '<div style="padding:6px 14px;background:#e8f5e9;font-size:11px;font-weight:700;' +
+      'color:#1a472a;letter-spacing:0.3px">✅ POR ENCIMA DEL UMBRAL (' + above.length + ')</div>';
+    above.forEach(p => { html += playerRowHTML(p, threshold); });
+  }
+
+  // Below threshold
+  if (below.length > 0) {
+    html += '<div style="padding:6px 14px;background:#fff5f5;font-size:11px;font-weight:700;' +
+      'color:#b71c1c;letter-spacing:0.3px">⚠️ POR DEBAJO DEL UMBRAL (' + below.length + ')</div>';
+    below.forEach(p => { html += playerRowHTML(p, threshold); });
+  }
+
+  el.innerHTML = html;
+}
+
+function playerRowHTML(p, threshold) {
+  const s    = p.stats;
+  const cls  = s.pct >= threshold ? 'above' : 'below';
+
+  return '<div class="stats-player-row" onclick="openStatsModal(\'' +
+    p.name.replace(/'/g,"\\'") + '\')">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+      '<div class="stats-player-name">' + (p.apodo ? '"' + p.apodo + '"' : p.name) + '</div>' +
+      '<div style="font-size:11px;color:#aaa">' + s.total + ' fechas</div>' +
+    '</div>' +
+    '<div class="stats-bar-wrap">' +
+      '<div class="stats-bar-bg">' +
+        '<div class="stats-bar-fill ' + cls + '" style="width:' + s.pct + '%"></div>' +
+      '</div>' +
+      '<div class="stats-bar-pct ' + cls + '">' + s.pct + '%</div>' +
+    '</div>' +
+    '<div class="stats-mini-pills">' +
+      (s.presente  > 0 ? '<span class="stats-mini-pill smp-p">✓ ' + s.presente + ' pres</span>' : '') +
+      (s.lesionado > 0 ? '<span class="stats-mini-pill smp-l">⚡ ' + s.lesionado + ' les</span>' : '') +
+      (s.ausente   > 0 ? '<span class="stats-mini-pill smp-a">✗ ' + s.ausente + ' aus</span>' : '') +
+      (s.aviso     > 0 ? '<span class="stats-mini-pill smp-av">◎ ' + s.aviso + ' avisó</span>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+// ── PLAYER MODAL ──────────────────────────────────────────
+function openStatsModal(playerName) {
+  const player  = getAllPlayers().find(p => p.name === playerName);
+  if (!player) return;
+
+  document.getElementById('stats-modal-name').textContent  = playerName;
+  document.getElementById('stats-modal-apodo').textContent = player.apodo ? '"' + player.apodo + '"' : '';
+
+  const months     = Object.keys(statsState.rawData).map(Number).sort((a,b)=>a-b);
+  const overall    = computePlayerStats(playerName, months);
+  const threshold  = statsState.threshold;
+  const cls        = overall.pct >= threshold ? 'above' : 'below';
+
+  let html = '';
+
+  // Overall summary
+  html += '<div style="background:#f0f2ff;border-radius:10px;padding:12px;margin-bottom:14px">' +
+    '<div style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600">TEMPORADA COMPLETA</div>' +
+    '<div style="display:flex;align-items:center;gap:10px">' +
+      '<div class="stats-bar-bg" style="flex:1">' +
+        '<div class="stats-bar-fill ' + cls + '" style="width:' + overall.pct + '%;height:12px"></div>' +
+      '</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#002395">' + overall.pct + '%</div>' +
+    '</div>' +
+    '<div class="stats-mini-pills" style="margin-top:8px">' +
+      '<span class="stats-mini-pill smp-p">✓ ' + overall.presente + ' Presente</span>' +
+      (overall.lesionado > 0 ? '<span class="stats-mini-pill smp-l">⚡ ' + overall.lesionado + ' Lesionado</span>' : '') +
+      '<span class="stats-mini-pill smp-a">✗ ' + overall.ausente + ' Ausente</span>' +
+      '<span class="stats-mini-pill smp-av">◎ ' + overall.aviso + ' Avisó</span>' +
+    '</div>' +
+  '</div>';
+
+  // Month by month breakdown
+  html += '<div style="font-size:12px;font-weight:700;color:#888;margin-bottom:8px;' +
+    'text-transform:uppercase;letter-spacing:0.4px">Evolución por mes</div>';
+
+  months.forEach(m => {
+    const s = computePlayerStats(playerName, [m]);
+    if (s.total === 0) return;
+    const barW = s.pct;
+    html += '<div class="stats-month-detail">' +
+      '<div class="stats-month-name">' + MONTH_SHORT[m] + '</div>' +
+      '<div class="stats-detail-bar-bg">' +
+        '<div class="stats-detail-bar-fill" style="width:' + barW + '%;' +
+          'background:' + (s.pct >= threshold ? 'linear-gradient(90deg,#1a472a,#2d9e5f)' :
+          'linear-gradient(90deg,#b71c1c,#e53935)') + '"></div>' +
+      '</div>' +
+      '<div class="stats-detail-pct" style="color:' + (s.pct >= threshold ? '#1a472a' : '#b71c1c') + '">' +
+        s.pct + '%</div>' +
+      '<div style="font-size:11px;color:#aaa;width:50px;text-align:right">' +
+        s.presente + 'P ' + (s.lesionado>0?s.lesionado+'L ':'') + s.total + 'T</div>' +
+    '</div>';
+  });
+
+  document.getElementById('stats-modal-body').innerHTML = html;
+  document.getElementById('stats-modal').classList.add('open');
+}
+
+function closeStatsModal(e) {
+  document.getElementById('stats-modal').classList.remove('open');
 }
 
 </script>
