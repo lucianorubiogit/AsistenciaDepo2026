@@ -2131,11 +2131,11 @@ function generateFixture() {
     return;
   }
 
-  // Build matches (Round Robin)
-  const matches = buildRoundRobin(allTeams, depoTeams);
-
-  // Schedule matches into courts
-  const schedule = scheduleMatches(matches, numCourts, slotSize, startMin, limitMin, duration, depoTeams);
+  // Build and schedule fixture
+  const schedule = buildFixture({
+    depoTeams, visitors: allTeams.filter(t => t.club !== 'Depo'),
+    numCourts, duration, interval, startMin, limitMin
+  });
 
   fixState.generatedSlots = schedule;
   fixState.params = { numCourts, duration, interval, slotSize, startMin, limitMin, allTeams };
@@ -2144,170 +2144,141 @@ function generateFixture() {
   switchFixTab('result');
 }
 
-// ── ROUND ROBIN BUILDER ───────────────────────────────────
-function buildRoundRobin(allTeams, depoTeams) {
-  const matches  = [];
+function buildFixture(params) {
+  const { depoTeams, visitors, numCourts, duration, interval, startMin, limitMin } = params;
+  const slotSize = duration + interval;
+  const allTeams = [...depoTeams, ...visitors];
   const depoIds  = new Set(depoTeams.map(t => t.id));
+  const n        = allTeams.length;
+
+  // Build all cross-club pairs
+  const allPairs = [];
   const pairSet  = new Set();
-
-  function tryAdd(a, b, priority) {
+  function addPair(a, b, priority) {
     const key = [a.id, b.id].sort().join('|');
-    if (!pairSet.has(key)) {
-      pairSet.add(key);
-      matches.push({ home: a, away: b, priority });
-      return true;
-    }
-    return false;
+    if (pairSet.has(key)) return;
+    pairSet.add(key);
+    allPairs.push({ a, b, priority, used: false });
   }
+  depoTeams.filter(t=>t.level===1).forEach(d =>
+    visitors.filter(v=>v.level===1).forEach(v => addPair(d,v,1))
+  );
+  for (let i=0; i<n; i++)
+    for (let j=i+1; j<n; j++)
+      if (allTeams[i].club !== allTeams[j].club) addPair(allTeams[i],allTeams[j],2);
 
-  // Priority 1: level-1 depo vs level-1 visitors
-  const depo1 = allTeams.filter(t => depoIds.has(t.id) && t.level === 1);
-  const vis1  = allTeams.filter(t => !depoIds.has(t.id) && t.level === 1);
-  depo1.forEach(d => vis1.forEach(v => tryAdd(d, v, 1)));
+  const maxSlots    = limitMin === Infinity
+    ? Math.ceil(allPairs.length / numCourts) + 4
+    : Math.floor((limitMin - startMin) / slotSize);
+  const totalGames  = maxSlots * numCourts;
+  const hardCap     = limitMin === Infinity ? Infinity : Math.ceil(totalGames * 2 / n);
 
-  // Priority 2: all other cross-club pairs
-  for (let i = 0; i < allTeams.length; i++) {
-    for (let j = i + 1; j < allTeams.length; j++) {
-      const a = allTeams[i], b = allTeams[j];
-      if (a.club === b.club) continue;
-      tryAdd(a, b, 2);
-    }
-  }
+  const scheduled  = [];
+  const teamCount  = {};
+  allTeams.forEach(t => { teamCount[t.id] = 0; });
+  let lastDepoPlayed = null;
 
-  matches.sort((a, b) => a.priority - b.priority);
-  return matches;
-}
+  for (let slot=0; slot<maxSlots; slot++) {
+    const slotStart = startMin + slot * slotSize;
+    if (limitMin !== Infinity && slotStart + duration > limitMin) break;
 
-// ── SCHEDULER ─────────────────────────────────────────────
-function scheduleMatches(matches, numCourts, slotSize, startMin, limitMin, duration, depoTeams) {
-  const depoIds   = new Set(depoTeams.map(t => t.id));
-  const scheduled = [];
+    // Recalculate current min/max each slot for dynamic prioritization
+    const counts       = Object.values(teamCount);
+    const currentMin   = Math.min(...counts);
+    const slotsLeft    = limitMin === Infinity ? 999
+      : Math.floor((limitMin - slotStart) / slotSize);
 
-  // ── STEP 1: Calculate capacity ──────────────────────────
-  // How many total slots fit within the time window per court?
-  const hasLimit    = limitMin !== Infinity;
-  const windowMins  = hasLimit ? (limitMin - startMin) : null;
+    // Teams urgently needing games (at or below current min AND have few slots left)
+    const urgentTeams = new Set(
+      allTeams
+        .filter(t => teamCount[t.id] <= currentMin)
+        .filter(t => {
+          // count remaining pairs for this team
+          const rem = allPairs.filter(p => !p.used &&
+            (p.a.id===t.id || p.b.id===t.id)).length;
+          return rem > 0 && rem <= slotsLeft + 1;
+        })
+        .map(t => t.id)
+    );
 
-  // Each court can hold floor((window) / slotSize) slots
-  // But last slot doesn't need interval — just duration
-  function slotsPerCourt(window) {
-    if (!window) return Infinity;
-    let count = 0, t = 0;
-    while (t + duration <= window) { count++; t += slotSize; }
-    return count;
-  }
+    const busyThisSlot = new Set();
+    let depoInSlot     = false;
+    let filledCourts   = 0;
 
-  const courtCapacity = hasLimit ? slotsPerCourt(windowMins) : Infinity;
-  const totalCapacity = hasLimit ? courtCapacity * numCourts : matches.length;
+    // Preferred Depo for this slot (alternation)
+    const depoByCount = [...depoIds]
+      .map(id => ({ id, count: teamCount[id] || 0 }))
+      .sort((a,b) => a.count !== b.count ? a.count - b.count
+        : (a.id === lastDepoPlayed ? 1 : -1));
+    const preferredDepoId = depoByCount[0]?.id || null;
 
-  // ── STEP 2: Fair distribution ───────────────────────────
-  // Determine max games per team so distribution is even
-  const allTeamIds  = [...new Set(matches.flatMap(m => [m.home.id, m.away.id]))];
-  const numTeams    = allTeamIds.length;
+    for (let court=0; court<numCourts; court++) {
+      let bestPair  = null;
+      let bestScore = Infinity;
 
-  // Target: distribute totalCapacity games as evenly as possible
-  // Each game uses 2 team-slots, so total team-slots = totalCapacity * 2
-  // Max per team = ceil((totalCapacity * 2) / numTeams)
-  const maxGamesPerTeam = hasLimit
-    ? Math.ceil((totalCapacity * 2) / numTeams)
-    : Infinity;
+      for (const pair of allPairs) {
+        if (pair.used) continue;
+        const { a, b } = pair;
+        if (busyThisSlot.has(a.id) || busyThisSlot.has(b.id)) continue;
+        if (depoInSlot && (depoIds.has(a.id) || depoIds.has(b.id))) continue;
+        if (teamCount[a.id] >= hardCap || teamCount[b.id] >= hardCap) continue;
 
-  // ── STEP 3: Schedule with constraints ───────────────────
-  const courtNext = Array(numCourts).fill(startMin);
-  const teamNext  = {};   // earliest next start time per team
-  const teamCount = {};   // games played per team
-  const teamMins  = {};   // total minutes played per team
-  allTeamIds.forEach(id => { teamNext[id] = startMin; teamCount[id] = 0; teamMins[id] = 0; });
+        const ca = teamCount[a.id], cb = teamCount[b.id];
+        const prioBonus = (pair.priority===1 && slot===0) ? -10000 : 0;
 
-  // Work from a queue; try each match in priority order
-  const queue = [...matches];
+        // Urgent team bonus: if either team is urgent, strongly prefer this pair
+        const urgentBonus = (urgentTeams.has(a.id) || urgentTeams.has(b.id)) ? -2000 : 0;
+        // Extra bonus if BOTH teams are urgent
+        const bothUrgent  = (urgentTeams.has(a.id) && urgentTeams.has(b.id)) ? -1000 : 0;
 
-  let safetyMax = queue.length * (numCourts + 2);
-  let attempts  = 0;
-
-  while (queue.length > 0 && attempts < safetyMax) {
-    attempts++;
-    let placed = false;
-
-    for (let mi = 0; mi < queue.length; mi++) {
-      const match        = queue[mi];
-      const { home, away } = match;
-
-      // Skip if either team already at max games
-      if ((teamCount[home.id] || 0) >= maxGamesPerTeam) continue;
-      if ((teamCount[away.id] || 0) >= maxGamesPerTeam) continue;
-
-      // Find best court for this match
-      let bestCourt = -1, bestStart = Infinity;
-
-      for (let c = 0; c < numCourts; c++) {
-        const earliest = Math.max(
-          courtNext[c],
-          teamNext[home.id] || startMin,
-          teamNext[away.id] || startMin
-        );
-
-        // Hard limit: don't start after limit
-        if (hasLimit && earliest + duration > limitMin) continue;
-
-        // Depo conflict: no two Depo teams overlap on any court
-        if (hasDepoConflict(home, away, earliest, duration, depoIds, scheduled)) continue;
-
-        // Prefer court 0 for Depo matches, court 1 for visitor-only
-        const isDepoMatch = depoIds.has(home.id) || depoIds.has(away.id);
-        const preferred   = isDepoMatch ? 0 : Math.min(1, numCourts - 1);
-        const score       = earliest + (c === preferred ? 0 : 1); // slight preference
-
-        if (earliest < bestStart || (earliest === bestStart && c === preferred)) {
-          bestStart = earliest;
-          bestCourt = c;
+        // Depo alternation
+        const aIsDepo = depoIds.has(a.id), bIsDepo = depoIds.has(b.id);
+        let depoBonus = 0;
+        if (aIsDepo || bIsDepo) {
+          const thisDepoId = aIsDepo ? a.id : b.id;
+          depoBonus = (thisDepoId === preferredDepoId) ? -500 : 500;
         }
+
+        const minC  = Math.min(ca, cb);
+        const score = prioBonus + urgentBonus + bothUrgent + depoBonus
+          + minC * 100 + (ca + cb) + pair.priority * 0.1;
+
+        if (score < bestScore) { bestScore = score; bestPair = pair; }
       }
 
-      if (bestCourt === -1) continue; // no valid slot found for this match now
+      if (!bestPair) continue;
 
-      // Place the match
+      bestPair.used = true;
+      busyThisSlot.add(bestPair.a.id);
+      busyThisSlot.add(bestPair.b.id);
+      const aIsDepo = depoIds.has(bestPair.a.id);
+      const bIsDepo = depoIds.has(bestPair.b.id);
+      if (aIsDepo || bIsDepo) {
+        depoInSlot     = true;
+        lastDepoPlayed = aIsDepo ? bestPair.a.id : bestPair.b.id;
+      }
+      teamCount[bestPair.a.id]++;
+      teamCount[bestPair.b.id]++;
+      filledCourts++;
+
       scheduled.push({
-        court:     bestCourt,
-        startMin:  bestStart,
-        endMin:    bestStart + duration,
-        home:      home.name,
-        away:      away.name,
-        homeId:    home.id,
-        awayId:    away.id,
-        overLimit: false  // already filtered above
+        slot, court,
+        startMin: slotStart, endMin: slotStart+duration,
+        home: bestPair.a.name, away: bestPair.b.name,
+        homeId: bestPair.a.id, awayId: bestPair.b.id
       });
-
-      courtNext[bestCourt]   = bestStart + slotSize;
-      teamNext[home.id]      = bestStart + slotSize;
-      teamNext[away.id]      = bestStart + slotSize;
-      teamCount[home.id]     = (teamCount[home.id] || 0) + 1;
-      teamCount[away.id]     = (teamCount[away.id] || 0) + 1;
-      teamMins[home.id]      = (teamMins[home.id]  || 0) + duration;
-      teamMins[away.id]      = (teamMins[away.id]  || 0) + duration;
-
-      queue.splice(mi, 1);
-      placed = true;
-      break;
     }
-
-    if (!placed) break; // no match could be placed — done
+    if (filledCourts===0) break;
   }
 
-  scheduled._teamMins   = teamMins;
-  scheduled._teamCount  = teamCount;
+  scheduled.sort((a,b) => a.slot!==b.slot ? a.slot-b.slot : a.court-b.court);
+  scheduled._teamCount = { ...teamCount };
+  scheduled._teamMins  = Object.fromEntries(
+    Object.entries(teamCount).map(([id,c])=>[id,c*duration])
+  );
   return scheduled;
 }
 
-function hasDepoConflict(home, away, startMin, duration, depoIds, scheduled) {
-  if (!depoIds.has(home.id) && !depoIds.has(away.id)) return false;
-  for (const s of scheduled) {
-    if (!depoIds.has(s.homeId) && !depoIds.has(s.awayId)) continue;
-    // Overlap check
-    if (startMin < s.endMin && startMin + duration > s.startMin) return true;
-  }
-  return false;
-}
 
 // ── RENDER RESULT ─────────────────────────────────────────
 function minToTime(min) {
