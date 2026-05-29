@@ -711,6 +711,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
+      <div style="text-align:center;margin-top:16px;font-size:11px;color:#aaa;letter-spacing:0.5px">V 1.0.15</div>
     </div>
   </div>
 </div>
@@ -1130,7 +1131,14 @@ textarea.med-form-input { font-family:inherit; }
         </div>
       </div>
 
-      <!-- Player list -->
+      <!-- WhatsApp export button -->
+    <button onclick="copyStatsWA()"
+      style="width:100%;padding:12px;background:#25d366;color:#fff;border:none;
+             border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px">
+      Compartir estadisticas por WhatsApp
+    </button>
+
+     <!-- Player list -->
       <div class="stats-card" style="padding:0;overflow:hidden">
         <div style="padding:12px 14px 8px;border-bottom:1px solid #f0f0f0">
           <div class="stats-card-title" style="margin-bottom:0">👥 Jugadores</div>
@@ -1950,6 +1958,57 @@ function copyInformar() {
     showToast('✓ Copiado al portapapeles');
     closeInformarModal();
   });
+}
+
+function copyStatsWA() {
+  var months    = getSelectedMonths();
+  var players   = getAllPlayers();
+  var threshold = statsState.threshold;
+  var selEl     = document.getElementById('stats-period');
+  var period    = selEl ? selEl.value : 'all';
+  var periodLabel = period === 'all' ? 'Temporada completa' : (MONTH_NAMES[parseInt(period)] || period);
+
+  var withStats = players.map(function(p) {
+    return { name:p.name, apodo:p.apodo, stats: computePlayerStats(p.name, months) };
+  }).filter(function(p){ return p.stats.total > 0; })
+    .sort(function(a,b){ return b.stats.pct - a.stats.pct; });
+
+  if (withStats.length === 0) { showToast('Sin datos para exportar'); return; }
+
+  var above = withStats.filter(function(p){ return p.stats.pct >= threshold; });
+  var below  = withStats.filter(function(p){ return p.stats.pct <  threshold; });
+  var totalPct = withStats.reduce(function(s,p){ return s + p.stats.pct; }, 0);
+  var avgPct   = Math.round(totalPct / withStats.length);
+
+  var today    = new Date();
+  var MSHORT   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  var dateStr  = today.getDate() + ' de ' + MSHORT[today.getMonth()] + ' ' + today.getFullYear();
+
+  var text = 'Estadisticas Asistencia M13\n';
+  text += periodLabel + ' - ' + dateStr + '\n';
+  text += 'Umbral: ' + threshold + '%\n\n';
+
+  if (above.length > 0) {
+    text += 'Por encima del ' + threshold + '% (' + above.length + ')\n';
+    above.forEach(function(p, i) {
+      var lbl = p.apodo ? '"' + p.apodo + '"' : p.name;
+      text += (i+1) + '. ' + lbl + ' - ' + p.stats.pct + '% (' +
+        (p.stats.presente + p.stats.lesionado) + '/' + p.stats.total + ')\n';
+    });
+  }
+
+  if (below.length > 0) {
+    text += '\nPor debajo del ' + threshold + '% (' + below.length + ')\n';
+    below.forEach(function(p, i) {
+      var lbl = p.apodo ? '"' + p.apodo + '"' : p.name;
+      text += (i+1) + '. ' + lbl + ' - ' + p.stats.pct + '% (' +
+        (p.stats.presente + p.stats.lesionado) + '/' + p.stats.total + ')\n';
+    });
+  }
+
+  text += '\nPromedio equipo: ' + avgPct + '%';
+
+  navigator.clipboard.writeText(text).then(function(){ showToast('Copiado para WhatsApp'); });
 }
 
 function showToast(msg) {
