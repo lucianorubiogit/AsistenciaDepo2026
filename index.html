@@ -619,6 +619,77 @@ textarea.med-form-input { font-family:inherit; }
   padding:8px 4px;letter-spacing:0.4px;text-transform:uppercase;
 }
 
+/* ── GIRA TABS ── */
+.gira-tab {
+  flex:1;padding:8px 4px;border:none;border-radius:10px 10px 0 0;
+  background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);
+  font-size:12px;font-weight:600;cursor:pointer;
+}
+.gira-tab.active { background:#fff;color:#e65100; }
+
+/* ── INSCRIPTO CARD ── */
+.gira-player-card {
+  background:#fff;border-radius:13px;margin-bottom:8px;
+  border:1px solid #eee;padding:12px 14px;
+}
+.gira-player-header {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.gira-player-name  { font-size:15px;font-weight:700;color:#333; }
+.gira-player-apodo { font-size:12px;color:#aaa; }
+.gira-player-badge {
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;
+}
+.gb-full    { background:#e8f5e9;color:#1a472a; }
+.gb-partial { background:#fff8f0;color:#e65100; }
+.gb-none    { background:#fff5f5;color:#b71c1c; }
+
+/* ── CUOTAS ── */
+.gira-cuotas {
+  display:flex;gap:6px;align-items:center;margin-bottom:6px;
+}
+.gira-cuota-btn {
+  width:36px;height:36px;border-radius:50%;border:2px solid #ddd;
+  background:#fff;font-size:12px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;color:#999;flex-shrink:0;
+}
+.gira-cuota-btn.paid {
+  background:#e65100;border-color:#e65100;color:#fff;
+}
+.gira-deuda {
+  font-size:12px;color:#888;margin-top:2px;
+}
+.gira-deuda.zero { color:#1a472a;font-weight:600; }
+
+/* ── GASTO CARD ── */
+.gira-gasto-card {
+  background:#fff;border-radius:13px;margin-bottom:8px;
+  border:1px solid #eee;padding:12px 14px;
+}
+.gira-gasto-header {
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;
+}
+.gira-gasto-cat {
+  font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;
+  background:#fff3e0;color:#e65100;
+}
+.gira-gasto-importe {
+  font-size:17px;font-weight:800;color:#333;
+}
+.gira-gasto-desc   { font-size:13px;color:#555;margin-bottom:4px; }
+.gira-gasto-meta   { font-size:11px;color:#aaa;display:flex;gap:10px; }
+.gira-gasto-del {
+  background:none;border:none;color:#ef9a9a;font-size:18px;
+  cursor:pointer;padding:2px;line-height:1;float:right;
+}
+
+/* ── SUMMARY ── */
+.gira-sum-item { }
+.gira-sum-num  { font-size:20px;font-weight:800;color:#e65100; }
+.gira-sum-lbl  { font-size:11px;color:#888;margin-top:2px; }
+
 </style>
 </head>
 <body>
@@ -682,6 +753,12 @@ textarea.med-form-input { font-family:inherit; }
                border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;
                display:flex;align-items:center;justify-content:center;gap:10px">
         🏥 Novedades Médicas
+      </button>
+      <button onclick="enterGira()"
+        style="width:100%;padding:18px;background:#e65100;color:#fff;border:none;
+               border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;gap:10px">
+        🧳 Gira
       </button>
     </div>
   </div>
@@ -1227,10 +1304,134 @@ textarea.med-form-input { font-family:inherit; }
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     GIRA SCREEN
+     ═══════════════════════════════════════════════════════ -->
+<div id="screen-gira" class="screen">
+  <div class="header">
+    <div class="header-sub" id="gira-division">M13</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">Gira</div>
+      <button onclick="showHomeScreen()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
+        ← Inicio
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div style="background:#e65100;display:flex;gap:4px;padding:0 10px 10px">
+    <button class="gira-tab active" id="gira-tab-inscriptos" onclick="switchGiraTab('inscriptos')">Inscriptos</button>
+    <button class="gira-tab"       id="gira-tab-gastos"      onclick="switchGiraTab('gastos')">Gastos</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="gira-loading" class="loading" style="display:none">
+    <div class="spinner" style="border-top-color:#e65100"></div>
+    <span>Cargando…</span>
+  </div>
+
+  <!-- INSCRIPTOS -->
+  <div id="gira-inscriptos" style="flex:1;overflow-y:auto;padding:12px">
+    <!-- Summary bar -->
+    <div id="gira-summary-bar"
+      style="background:#fff;border-radius:12px;padding:12px 14px;
+             margin-bottom:10px;border:1px solid #eee;
+             display:flex;justify-content:space-around;text-align:center">
+    </div>
+    <div id="gira-inscriptos-list"></div>
+  </div>
+
+  <!-- GASTOS -->
+  <div id="gira-gastos" style="display:none;flex:1;overflow-y:auto;padding:12px">
+    <button onclick="openGiraGastoForm(null)"
+      style="width:100%;padding:14px;background:#e65100;color:#fff;border:none;
+             border-radius:13px;font-size:15px;font-weight:700;cursor:pointer;
+             margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+      + Nuevo gasto
+    </button>
+    <!-- Totals -->
+    <div id="gira-gastos-total"
+      style="background:#fff3e0;border-radius:12px;padding:12px 14px;
+             margin-bottom:10px;border:1px solid #ffcc80;display:none">
+    </div>
+    <div id="gira-gastos-list"></div>
+    <div style="margin-top:8px">
+      <button onclick="copyGiraRendicion()"
+        style="width:100%;padding:12px;background:#25d366;color:#fff;border:none;
+               border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
+        📲 Rendición para WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- GIRA GASTO FORM MODAL -->
+<div class="modal-bg" id="gira-gasto-modal" onclick="closeGiraGastoForm(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div id="gira-gasto-title"
+      style="font-size:16px;font-weight:700;color:#e65100;margin-bottom:16px">
+      Nuevo gasto
+    </div>
+
+    <div class="med-form-group">
+      <label class="med-form-label">N° de ticket / Factura</label>
+      <input type="text" id="gira-ticket" class="med-form-input" placeholder="Ej: 0001-00045678">
+    </div>
+
+    <div class="med-form-group">
+      <label class="med-form-label">Categoría *</label>
+      <select id="gira-categoria" class="med-form-input">
+        <option value="">— seleccioná —</option>
+        <option>Transporte</option>
+        <option>Alojamiento</option>
+        <option>Alimentación</option>
+        <option>Materiales deportivos</option>
+        <option>Inscripción/Arbitraje</option>
+        <option>Otro</option>
+      </select>
+    </div>
+
+    <div class="med-form-group">
+      <label class="med-form-label">Descripción *</label>
+      <input type="text" id="gira-desc" class="med-form-input"
+        placeholder="Ej: Micro ida y vuelta Mar del Plata">
+    </div>
+
+    <div class="med-form-group">
+      <label class="med-form-label">Importe *</label>
+      <input type="number" id="gira-importe" class="med-form-input"
+        placeholder="0" min="0" step="1">
+    </div>
+
+    <div class="med-form-group">
+      <label class="med-form-label">Fecha *</label>
+      <input type="date" id="gira-fecha" class="med-form-input">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="saveGiraGasto()"
+        style="flex:1;padding:14px;background:#e65100;color:#fff;border:none;
+               border-radius:12px;font-size:15px;font-weight:600;cursor:pointer">
+        Guardar
+      </button>
+      <button onclick="closeGiraGastoForm()"
+        style="flex:1;padding:14px;background:#f5f5f5;color:#666;
+               border:1px solid #ddd;border-radius:12px;font-size:15px;cursor:pointer">
+        Cancelar
+      </button>
+    </div>
+    <div id="gira-gasto-error"
+      style="color:#c62828;font-size:13px;text-align:center;margin-top:8px;min-height:18px"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzWikE6Fjsjr9cjPg-g-ogsd1ApE3LH28JEGeezo63M1KZeSGrUSxAoi153-wL4a0y2/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxfWjrzvxrRSMbORuKjWDSPAGSWHpx9nlZh4KCkoENYkohNU00lZ_yflZx70RRWLEuu/exec";
 
 let state = {
   username:     "",
@@ -3492,20 +3693,340 @@ function copyMedicalWA() {
   const active = medState.records.filter(r => r.estado === 'Activa');
   if (active.length === 0) { showToast('No hay novedades activas'); return; }
 
-  let text = '🏥 *Novedades Médicas — Infantiles M13*\n\n';
+  function fmtFecha(iso) {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length < 3) return iso;
+    return parts[2] + '/' + parts[1];
+  }
+
+  let text = '🏥 *Novedades Médicas — M13*\n\n';
   active.forEach(r => {
     const tipo = r.tipoOtro || r.tipo;
-    text += '👤 *' + r.jugador + '*\n';
-    text += '📋 ' + tipo + '\n';
+    text += '👤 *' + r.jugador + '* — ' + tipo + '\n';
     if (r.descripcion) text += '📝 ' + r.descripcion + '\n';
-    if (r.fechaAlta)   text += '📅 Alta estimada: ' + r.fechaAlta + '\n';
-    if (r.estadosActividad && r.estadosActividad.length > 0) {
-      text += '⚡ ' + r.estadosActividad.join(' · ') + '\n';
-    }
+    if (r.fechaAlta)   text += '📅 Alta est: ' + fmtFecha(r.fechaAlta) + '\n';
     text += '\n';
   });
 
   navigator.clipboard.writeText(text).then(() => showToast('✓ Copiado para WhatsApp'));
+}
+
+// ════════════════════════════════════════════════════════════
+// GIRA MODULE
+// ════════════════════════════════════════════════════════════
+
+const GIRA_CUOTA_VALOR = 130000;
+const GIRA_NUM_CUOTAS  = 5;
+const GIRA_CATEGORIAS  = [
+  'Transporte','Alojamiento','Alimentación',
+  'Materiales deportivos','Inscripción/Arbitraje','Otro'
+];
+
+let giraState = {
+  inscriptos: [], // [{id, name, apodo, cuotas:[true,false,...]}]
+  gastos:     [], // [{id, ticket, categoria, desc, importe, fecha}]
+  editingGasto: null
+};
+
+// ── ENTRY ─────────────────────────────────────────────────
+async function enterGira() {
+  showScreen('gira');
+  document.getElementById('gira-division').textContent = state.division || 'M13';
+  document.getElementById('gira-loading').style.display    = 'flex';
+  document.getElementById('gira-inscriptos').style.display = 'none';
+  document.getElementById('gira-gastos').style.display     = 'none';
+
+  try {
+    const data = await api({ action: 'getGiraData' });
+    if (data.ok) {
+      giraState.gastos = data.gastos || [];
+
+      // Merge server inscriptos with current player list
+      const allPlayers = (planState.players.length > 0
+        ? planState.players : state.players)
+        .slice().sort((a,b) => (a.apodo||a.name).localeCompare(b.apodo||b.name));
+
+      // Build inscriptos: start from players list, fill in saved cuotas
+      const saved = data.inscriptos || [];
+      giraState.inscriptos = allPlayers.map(p => {
+        const key   = p.apodo || p.name;
+        const found = saved.find(s => s.id === key);
+        return {
+          id:     key,
+          name:   p.name,
+          apodo:  p.apodo,
+          cuotas: found ? found.cuotas : Array(GIRA_NUM_CUOTAS).fill(false)
+        };
+      });
+    }
+  } catch(e) {
+    showToast('Error cargando datos de gira');
+  }
+
+  document.getElementById('gira-loading').style.display = 'none';
+  switchGiraTab('inscriptos');
+}
+
+function switchGiraTab(tab) {
+  ['inscriptos','gastos'].forEach(t => {
+    const el = document.getElementById('gira-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+    document.getElementById('gira-tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'inscriptos') renderGiraInscriptos();
+  if (tab === 'gastos')     renderGiraGastos();
+}
+
+// ── INSCRIPTOS ────────────────────────────────────────────
+function renderGiraInscriptos() {
+  const list = document.getElementById('gira-inscriptos-list');
+  const bar  = document.getElementById('gira-summary-bar');
+
+  const total     = giraState.inscriptos.length;
+  const pagaron   = giraState.inscriptos.filter(p => p.cuotas.every(Boolean)).length;
+  const parcial   = giraState.inscriptos.filter(p =>
+    p.cuotas.some(Boolean) && !p.cuotas.every(Boolean)).length;
+  const nada      = giraState.inscriptos.filter(p => p.cuotas.every(c => !c)).length;
+  const recaudado = giraState.inscriptos.reduce((sum, p) =>
+    sum + p.cuotas.filter(Boolean).length * GIRA_CUOTA_VALOR, 0);
+
+  bar.innerHTML =
+    '<div class="gira-sum-item"><div class="gira-sum-num">' + total + '</div><div class="gira-sum-lbl">Jugadores</div></div>' +
+    '<div class="gira-sum-item"><div class="gira-sum-num" style="color:#1a472a">' + pagaron + '</div><div class="gira-sum-lbl">Al día</div></div>' +
+    '<div class="gira-sum-item"><div class="gira-sum-num" style="color:#b71c1c">' + nada + '</div><div class="gira-sum-lbl">Sin pagar</div></div>' +
+    '<div class="gira-sum-item"><div class="gira-sum-num" style="font-size:13px">' +
+      formatPeso(recaudado) + '</div><div class="gira-sum-lbl">Recaudado</div></div>';
+
+  if (giraState.inscriptos.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa">Sin jugadores</div>';
+    return;
+  }
+
+  list.innerHTML = giraState.inscriptos.map((p, idx) => {
+    const paid  = p.cuotas.filter(Boolean).length;
+    const deuda = (GIRA_NUM_CUOTAS - paid) * GIRA_CUOTA_VALOR;
+
+    let badgeCls = 'gb-none', badgeTxt = 'Sin pagar';
+    if (paid === GIRA_NUM_CUOTAS) { badgeCls = 'gb-full';    badgeTxt = '✓ Al día'; }
+    else if (paid > 0)            { badgeCls = 'gb-partial'; badgeTxt = paid + '/' + GIRA_NUM_CUOTAS; }
+
+    const cuotaBtns = p.cuotas.map((c, ci) =>
+      '<button class="gira-cuota-btn' + (c ? ' paid' : '') + '" ' +
+        'onclick="toggleCuota(' + idx + ',' + ci + ')">' + (ci+1) + '</button>'
+    ).join('');
+
+    return '<div class="gira-player-card">' +
+      '<div class="gira-player-header">' +
+        '<div>' +
+          '<div class="gira-player-name">' + (p.apodo ? '"' + p.apodo + '"' : p.name) + '</div>' +
+          '<div class="gira-player-apodo">' + p.name + '</div>' +
+        '</div>' +
+        '<span class="gira-player-badge ' + badgeCls + '">' + badgeTxt + '</span>' +
+      '</div>' +
+      '<div class="gira-cuotas">' + cuotaBtns + '</div>' +
+      '<div class="gira-deuda' + (deuda === 0 ? ' zero' : '') + '">' +
+        (deuda === 0 ? '✓ Sin deuda' : 'Debe: ' + formatPeso(deuda)) +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function toggleCuota(playerIdx, cuotaIdx) {
+  const p = giraState.inscriptos[playerIdx];
+  if (!p) return;
+  p.cuotas[cuotaIdx] = !p.cuotas[cuotaIdx];
+  renderGiraInscriptos();
+
+  // Save to server
+  try {
+    await api({ action: 'saveGiraInscripto', inscripto: p });
+  } catch(e) {
+    showToast('Guardado localmente');
+  }
+}
+
+// ── GASTOS ────────────────────────────────────────────────
+function renderGiraGastos() {
+  const list   = document.getElementById('gira-gastos-list');
+  const totEl  = document.getElementById('gira-gastos-total');
+  const gastos = giraState.gastos.slice().sort((a,b) =>
+    (a.fecha||'').localeCompare(b.fecha||''));
+
+  if (gastos.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa">Sin gastos registrados</div>';
+    totEl.style.display = 'none';
+    return;
+  }
+
+  // Totals by category
+  const byCat = {};
+  let totalGeneral = 0;
+  gastos.forEach(g => {
+    byCat[g.categoria] = (byCat[g.categoria] || 0) + (g.importe || 0);
+    totalGeneral += g.importe || 0;
+  });
+
+  totEl.style.display = 'block';
+  totEl.innerHTML =
+    '<div style="font-size:12px;font-weight:700;color:#888;margin-bottom:8px">TOTALES POR CATEGORÍA</div>' +
+    Object.entries(byCat).map(([cat, imp]) =>
+      '<div style="display:flex;justify-content:space-between;padding:4px 0;' +
+        'border-bottom:1px solid #ffe0b2;font-size:13px">' +
+        '<span style="color:#555">' + cat + '</span>' +
+        '<span style="font-weight:700;color:#e65100">' + formatPeso(imp) + '</span>' +
+      '</div>'
+    ).join('') +
+    '<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px">' +
+      '<span style="font-weight:700">Total general</span>' +
+      '<span style="font-weight:800;color:#e65100">' + formatPeso(totalGeneral) + '</span>' +
+    '</div>';
+
+  list.innerHTML = gastos.map(g =>
+    '<div class="gira-gasto-card">' +
+      '<button class="gira-gasto-del" onclick="deleteGiraGasto(' + g.id + ')">×</button>' +
+      '<div class="gira-gasto-header">' +
+        '<span class="gira-gasto-cat">' + g.categoria + '</span>' +
+        '<span class="gira-gasto-importe">' + formatPeso(g.importe) + '</span>' +
+      '</div>' +
+      '<div class="gira-gasto-desc">' + g.desc + '</div>' +
+      '<div class="gira-gasto-meta">' +
+        (g.ticket ? '<span>🧾 ' + g.ticket + '</span>' : '') +
+        '<span>📅 ' + (g.fecha || '') + '</span>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+// ── GASTO FORM ────────────────────────────────────────────
+function openGiraGastoForm(id) {
+  giraState.editingGasto = id;
+  document.getElementById('gira-gasto-title').textContent = id ? 'Editar gasto' : 'Nuevo gasto';
+  document.getElementById('gira-gasto-error').textContent = '';
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('gira-ticket').value    = '';
+  document.getElementById('gira-categoria').value = '';
+  document.getElementById('gira-desc').value      = '';
+  document.getElementById('gira-importe').value   = '';
+  document.getElementById('gira-fecha').value     = today;
+
+  if (id) {
+    const g = giraState.gastos.find(g => g.id === id);
+    if (g) {
+      document.getElementById('gira-ticket').value    = g.ticket    || '';
+      document.getElementById('gira-categoria').value = g.categoria || '';
+      document.getElementById('gira-desc').value      = g.desc      || '';
+      document.getElementById('gira-importe').value   = g.importe   || '';
+      document.getElementById('gira-fecha').value     = g.fecha     || today;
+    }
+  }
+  document.getElementById('gira-gasto-modal').classList.add('open');
+}
+
+function closeGiraGastoForm(e) {
+  if (e && e.target !== document.getElementById('gira-gasto-modal')) return;
+  document.getElementById('gira-gasto-modal').classList.remove('open');
+}
+
+async function saveGiraGasto() {
+  const errEl = document.getElementById('gira-gasto-error');
+  errEl.textContent = '';
+
+  const categoria = document.getElementById('gira-categoria').value.trim();
+  const desc      = document.getElementById('gira-desc').value.trim();
+  const importe   = parseFloat(document.getElementById('gira-importe').value) || 0;
+  const fecha     = document.getElementById('gira-fecha').value;
+
+  if (!categoria)    { errEl.textContent = 'Seleccioná una categoría'; return; }
+  if (!desc)         { errEl.textContent = 'Ingresá una descripción'; return; }
+  if (importe <= 0)  { errEl.textContent = 'Ingresá un importe válido'; return; }
+  if (!fecha)        { errEl.textContent = 'Ingresá la fecha'; return; }
+
+  const gasto = {
+    id:        giraState.editingGasto || Date.now(),
+    ticket:    document.getElementById('gira-ticket').value.trim(),
+    categoria, desc, importe, fecha
+  };
+
+  if (giraState.editingGasto) {
+    const idx = giraState.gastos.findIndex(g => g.id === giraState.editingGasto);
+    if (idx > -1) giraState.gastos[idx] = gasto;
+  } else {
+    giraState.gastos.push(gasto);
+  }
+
+  try {
+    const res = await api({ action: 'saveGiraGasto', gasto });
+    if (!res.ok) { showToast('Error: ' + res.error); return; }
+    showToast('✓ Gasto guardado');
+  } catch(e) {
+    showToast('Guardado localmente');
+  }
+
+  document.getElementById('gira-gasto-modal').classList.remove('open');
+  renderGiraGastos();
+}
+
+async function deleteGiraGasto(id) {
+  giraState.gastos = giraState.gastos.filter(g => g.id !== id);
+  try {
+    await api({ action: 'deleteGiraGasto', id });
+  } catch(e) {}
+  renderGiraGastos();
+  showToast('Gasto eliminado');
+}
+
+// ── RENDICIÓN WHATSAPP ────────────────────────────────────
+function copyGiraRendicion() {
+  const gastos = giraState.gastos.slice().sort((a,b) =>
+    (a.fecha||'').localeCompare(b.fecha||''));
+
+  if (gastos.length === 0) { showToast('Sin gastos para rendir'); return; }
+
+  // Subtotals by category
+  const byCat = {};
+  let total = 0;
+  gastos.forEach(g => {
+    byCat[g.categoria] = (byCat[g.categoria] || 0) + (g.importe || 0);
+    total += g.importe || 0;
+  });
+
+  const today  = new Date();
+  const DAYS   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const dateStr = DAYS[today.getDay()] + ' ' + today.getDate() + ' de ' + MONTHS[today.getMonth()];
+
+  let text = '🧳 *Rendición Gira M13*\n' + dateStr + '\n\n';
+
+  // Subtotals
+  Object.entries(byCat).forEach(([cat, imp]) => {
+    const emoji = {
+      'Transporte':'🚌','Alojamiento':'🏨','Alimentación':'🍽️',
+      'Materiales deportivos':'🏈','Inscripción/Arbitraje':'📋','Otro':'📦'
+    }[cat] || '📋';
+    text += emoji + ' *' + cat + '*: ' + formatPeso(imp) + '\n';
+  });
+
+  text += '\n💰 *Total: ' + formatPeso(total) + '*\n\n';
+  text += '📄 *Detalle:*\n';
+
+  // Detail
+  gastos.forEach((g, i) => {
+    const num = String(i+1).padStart(3,'0');
+    text += num + ' | ' + g.categoria + ' | ' + formatPeso(g.importe);
+    if (g.ticket) text += ' | 🧾 ' + g.ticket;
+    text += '\n' + g.desc;
+    if (g.fecha) text += ' (' + g.fecha + ')';
+    text += '\n';
+  });
+
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Copiado para WhatsApp'));
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function formatPeso(n) {
+  return '$' + Math.round(n).toLocaleString('es-AR');
 }
 
 </script>
