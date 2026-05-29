@@ -1867,6 +1867,27 @@ function cancelAttendance() {
 }
 
 // ── TOAST ──────────────────────────────────────────────────
+// ── SHARED: ensure players loaded ─────────────────────────
+async function ensurePlayersLoaded() {
+  // Already have players in memory
+  if (planState.players && planState.players.length > 0) return;
+  if (state.players && state.players.length > 0) {
+    planState.players = state.players;
+    return;
+  }
+  // Fetch from server
+  try {
+    const shName = state.sheetName ||
+      (Object.values({2:"Febrero 26",3:"Marzo 26",4:"Abril 26",5:"Mayo 26",
+        6:"Junio 26",7:"Julio 26",8:"Agosto 26",9:"Septiembre 26",10:"Octubre 26"})
+        [new Date().getMonth() - 1]) || "Mayo 26";
+    const data = await api({ action: "getPlayers", dateCol: null, sheetName: shName });
+    if (data.ok && data.players && data.players.length > 0) {
+      planState.players = data.players;
+    }
+  } catch(e) {}
+}
+
 // ── INFORMAR ───────────────────────────────────────────────
 function openInformarModal() {
   const d = state.selectedDate;
@@ -3413,6 +3434,13 @@ async function enterMedical() {
   document.getElementById('med-active').style.display  = 'none';
   document.getElementById('med-history').style.display = 'none';
 
+  // Ensure players are loaded before opening form
+  await ensurePlayersLoaded();
+
+
+  // Ensure players are loaded before opening form
+  await ensurePlayersLoaded();
+
   try {
     const data = await api({ action: 'getMedicalData' });
     if (data.ok) {
@@ -3693,11 +3721,19 @@ function copyMedicalWA() {
   const active = medState.records.filter(r => r.estado === 'Activa');
   if (active.length === 0) { showToast('No hay novedades activas'); return; }
 
-  function fmtFecha(iso) {
-    if (!iso) return '';
-    const parts = iso.split('-');
-    if (parts.length < 3) return iso;
-    return parts[2] + '/' + parts[1];
+  function fmtFecha(raw) {
+    if (!raw) return '';
+    // Handle JS Date object serialized as long string
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      const day   = String(d.getDate()).padStart(2,'0');
+      const month = String(d.getMonth()+1).padStart(2,'0');
+      return day + '/' + month;
+    }
+    // Handle yyyy-MM-dd string
+    const parts = String(raw).split('-');
+    if (parts.length >= 3) return parts[2].substring(0,2) + '/' + parts[1];
+    return String(raw);
   }
 
   let text = '🏥 *Novedades Médicas — M13*\n\n';
@@ -3736,6 +3772,9 @@ async function enterGira() {
   document.getElementById('gira-loading').style.display    = 'flex';
   document.getElementById('gira-inscriptos').style.display = 'none';
   document.getElementById('gira-gastos').style.display     = 'none';
+
+  // Ensure players are loaded before building inscriptos list
+  await ensurePlayersLoaded();
 
   try {
     const data = await api({ action: 'getGiraData' });
@@ -3784,16 +3823,14 @@ function renderGiraInscriptos() {
   const bar  = document.getElementById('gira-summary-bar');
 
   const total     = giraState.inscriptos.length;
-  const pagaron   = giraState.inscriptos.filter(p => p.cuotas.every(Boolean)).length;
-  const parcial   = giraState.inscriptos.filter(p =>
-    p.cuotas.some(Boolean) && !p.cuotas.every(Boolean)).length;
+  const anotados  = giraState.inscriptos.filter(p => p.cuotas.some(Boolean)).length;
   const nada      = giraState.inscriptos.filter(p => p.cuotas.every(c => !c)).length;
   const recaudado = giraState.inscriptos.reduce((sum, p) =>
     sum + p.cuotas.filter(Boolean).length * GIRA_CUOTA_VALOR, 0);
 
   bar.innerHTML =
     '<div class="gira-sum-item"><div class="gira-sum-num">' + total + '</div><div class="gira-sum-lbl">Jugadores</div></div>' +
-    '<div class="gira-sum-item"><div class="gira-sum-num" style="color:#1a472a">' + pagaron + '</div><div class="gira-sum-lbl">Al día</div></div>' +
+    '<div class="gira-sum-item"><div class="gira-sum-num" style="color:#1a472a">' + anotados + '</div><div class="gira-sum-lbl">Anotados</div></div>' +
     '<div class="gira-sum-item"><div class="gira-sum-num" style="color:#b71c1c">' + nada + '</div><div class="gira-sum-lbl">Sin pagar</div></div>' +
     '<div class="gira-sum-item"><div class="gira-sum-num" style="font-size:13px">' +
       formatPeso(recaudado) + '</div><div class="gira-sum-lbl">Recaudado</div></div>';
