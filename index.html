@@ -711,7 +711,6 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;margin-top:16px;font-size:11px;color:#aaa;letter-spacing:0.5px">V 1.0.15</div>
     </div>
   </div>
 </div>
@@ -1131,14 +1130,7 @@ textarea.med-form-input { font-family:inherit; }
         </div>
       </div>
 
-      <!-- WhatsApp export button -->
-    <button onclick="copyStatsWA()"
-      style="width:100%;padding:12px;background:#25d366;color:#fff;border:none;
-             border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px">
-      Compartir estadisticas por WhatsApp
-    </button>
-
-     <!-- Player list -->
+      <!-- Player list -->
       <div class="stats-card" style="padding:0;overflow:hidden">
         <div style="padding:12px 14px 8px;border-bottom:1px solid #f0f0f0">
           <div class="stats-card-title" style="margin-bottom:0">👥 Jugadores</div>
@@ -1464,20 +1456,7 @@ function showScreen(id) {
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-async function api(payload) {
-  const body = JSON.stringify({
-    ...payload,
-    username: state.username,
-    password: state.password
-  });
-  const res  = await fetch(API_URL, {
-    method:  "POST",
-    headers: { "Content-Type": "text/plain" },
-    body
-  });
-  const text = await res.text();
-  return JSON.parse(text);
-}
+// api() is now handled by Supabase — see SUPABASE CLIENT below
 
 // ── LOGIN ──────────────────────────────────────────────────
 async function doLogin() {
@@ -1490,12 +1469,7 @@ async function doLogin() {
 
   try {
     // Combined login + getDates in one call — saves one round trip
-    const res  = await fetch(API_URL, {
-      method:  "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ action: "loginAndDates", username, password })
-    });
-    const data = JSON.parse(await res.text());
+    const data = await api({ action: "loginAndDates", username, password });
     if (!data.ok) { errEl.textContent = data.error; return; }
 
     state.username  = username;
@@ -1632,7 +1606,18 @@ function renderDates(dates) {
   list.innerHTML = '';
 
   if (dates.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa">No hay fechas cargadas en este mes</div>';
+    list.innerHTML =
+      '<div style="text-align:center;padding:20px;color:#aaa;font-size:14px">Sin registros este mes</div>' +
+      '<div class="fix-card" style="margin-top:8px">' +
+        '<div class="fix-card-title">Tomar asistencia para una fecha nueva</div>' +
+        '<input type="date" id="new-date-input" class="med-form-input" ' +
+          'value="' + new Date().toISOString().split("T")[0] + '">' +
+        '<button onclick="selectNewDate()" ' +
+          'style="width:100%;margin-top:8px;padding:13px;background:#002395;color:#fff;' +
+          'border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">' +
+          'Ir a esta fecha' +
+        '</button>' +
+      '</div>';
     return;
   }
 
@@ -1669,6 +1654,12 @@ function renderDates(dates) {
     el.onclick = () => selectDate(d);
     list.appendChild(el);
   });
+}
+
+function selectNewDate() {
+  const input = document.getElementById('new-date-input');
+  if (!input || !input.value) return;
+  selectDate({ col: 4, date: input.value, display: input.value });
 }
 
 async function selectDate(dateObj) {
@@ -1825,7 +1816,8 @@ async function saveAttendance() {
       action:    "saveAttendance",
       attendance,
       dateCol:   state.selectedDate.col,
-      sheetName: state.sheetName
+      sheetName: state.sheetName,
+      fecha:     state.selectedDate.date
     };
 
     const data = await api(payload);
@@ -1853,7 +1845,8 @@ async function saveAttendance() {
         const fresh = await api({
           action:    "getPlayersForDate",
           dateCol:   state.selectedDate.col,
-          sheetName: state.sheetName
+          sheetName: state.sheetName,
+          date:      state.selectedDate.date
         });
         if (fresh.ok) {
           state.players = fresh.players;
@@ -1877,19 +1870,13 @@ function cancelAttendance() {
 // ── TOAST ──────────────────────────────────────────────────
 // ── SHARED: ensure players loaded ─────────────────────────
 async function ensurePlayersLoaded() {
-  // Already have players in memory
   if (planState.players && planState.players.length > 0) return;
   if (state.players && state.players.length > 0) {
     planState.players = state.players;
     return;
   }
-  // Fetch from server
   try {
-    const shName = state.sheetName ||
-      (Object.values({2:"Febrero 26",3:"Marzo 26",4:"Abril 26",5:"Mayo 26",
-        6:"Junio 26",7:"Julio 26",8:"Agosto 26",9:"Septiembre 26",10:"Octubre 26"})
-        [new Date().getMonth() - 1]) || "Mayo 26";
-    const data = await api({ action: "getPlayers", dateCol: null, sheetName: shName });
+    const data = await api({ action: "getPlayers" });
     if (data.ok && data.players && data.players.length > 0) {
       planState.players = data.players;
     }
@@ -1958,57 +1945,6 @@ function copyInformar() {
     showToast('✓ Copiado al portapapeles');
     closeInformarModal();
   });
-}
-
-function copyStatsWA() {
-  var months    = getSelectedMonths();
-  var players   = getAllPlayers();
-  var threshold = statsState.threshold;
-  var selEl     = document.getElementById('stats-period');
-  var period    = selEl ? selEl.value : 'all';
-  var periodLabel = period === 'all' ? 'Temporada completa' : (MONTH_NAMES[parseInt(period)] || period);
-
-  var withStats = players.map(function(p) {
-    return { name:p.name, apodo:p.apodo, stats: computePlayerStats(p.name, months) };
-  }).filter(function(p){ return p.stats.total > 0; })
-    .sort(function(a,b){ return b.stats.pct - a.stats.pct; });
-
-  if (withStats.length === 0) { showToast('Sin datos para exportar'); return; }
-
-  var above = withStats.filter(function(p){ return p.stats.pct >= threshold; });
-  var below  = withStats.filter(function(p){ return p.stats.pct <  threshold; });
-  var totalPct = withStats.reduce(function(s,p){ return s + p.stats.pct; }, 0);
-  var avgPct   = Math.round(totalPct / withStats.length);
-
-  var today    = new Date();
-  var MSHORT   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-  var dateStr  = today.getDate() + ' de ' + MSHORT[today.getMonth()] + ' ' + today.getFullYear();
-
-  var text = 'Estadisticas Asistencia M13\n';
-  text += periodLabel + ' - ' + dateStr + '\n';
-  text += 'Umbral: ' + threshold + '%\n\n';
-
-  if (above.length > 0) {
-    text += 'Por encima del ' + threshold + '% (' + above.length + ')\n';
-    above.forEach(function(p, i) {
-      var lbl = p.apodo ? '"' + p.apodo + '"' : p.name;
-      text += (i+1) + '. ' + lbl + ' - ' + p.stats.pct + '% (' +
-        (p.stats.presente + p.stats.lesionado) + '/' + p.stats.total + ')\n';
-    });
-  }
-
-  if (below.length > 0) {
-    text += '\nPor debajo del ' + threshold + '% (' + below.length + ')\n';
-    below.forEach(function(p, i) {
-      var lbl = p.apodo ? '"' + p.apodo + '"' : p.name;
-      text += (i+1) + '. ' + lbl + ' - ' + p.stats.pct + '% (' +
-        (p.stats.presente + p.stats.lesionado) + '/' + p.stats.total + ')\n';
-    });
-  }
-
-  text += '\nPromedio equipo: ' + avgPct + '%';
-
-  navigator.clipboard.writeText(text).then(function(){ showToast('Copiado para WhatsApp'); });
 }
 
 function showToast(msg) {
@@ -4123,6 +4059,529 @@ function copyGiraRendicion() {
 // ── HELPERS ───────────────────────────────────────────────
 function formatPeso(n) {
   return '$' + Math.round(n).toLocaleString('es-AR');
+}
+
+
+// ════════════════════════════════════════════════
+// SUPABASE CLIENT
+// ════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// SUPABASE CLIENT — replaces Apps Script API
+// ════════════════════════════════════════════════════════════
+
+const SUPA_URL  = 'https://zmqguttgzgukdbpkkwvf.supabase.co/rest/v1';
+const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptcWd1dHRnemd1a2RicGtrd3ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMzg5MDEsImV4cCI6MjA5NTkxNDkwMX0.HUZmmY4cJSSiIi1UNf8tYDzD-zqCphfk6azAs0OvS54';
+
+const SUPA_HEADERS = {
+  'apikey':        SUPA_KEY,
+  'Authorization': 'Bearer ' + SUPA_KEY,
+  'Content-Type':  'application/json',
+  'Prefer':        'return=representation'
+};
+
+// ── Low-level REST helpers ────────────────────────────────
+
+async function supaGet(table, params) {
+  const qs  = params ? '?' + new URLSearchParams(params).toString() : '';
+  const res = await fetch(SUPA_URL + '/' + table + qs, {
+    headers: SUPA_HEADERS
+  });
+  if (!res.ok) throw new Error('GET ' + table + ' failed: ' + res.status);
+  return res.json();
+}
+
+async function supaPost(table, body) {
+  const res = await fetch(SUPA_URL + '/' + table, {
+    method:  'POST',
+    headers: SUPA_HEADERS,
+    body:    JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('POST ' + table + ' failed: ' + err);
+  }
+  return res.json();
+}
+
+async function supaPatch(table, filter, body) {
+  const res = await fetch(SUPA_URL + '/' + table + '?' + filter, {
+    method:  'PATCH',
+    headers: SUPA_HEADERS,
+    body:    JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('PATCH ' + table + ' failed: ' + res.status);
+  return res.json();
+}
+
+async function supaUpsert(table, body) {
+  const res = await fetch(SUPA_URL + '/' + table, {
+    method:  'POST',
+    headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body:    JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('UPSERT ' + table + ' failed: ' + err);
+  }
+  return res.json();
+}
+
+async function supaDelete(table, filter) {
+  const res = await fetch(SUPA_URL + '/' + table + '?' + filter, {
+    method:  'DELETE',
+    headers: SUPA_HEADERS
+  });
+  if (!res.ok) throw new Error('DELETE ' + table + ' failed: ' + res.status);
+  return res.ok;
+}
+
+// ── Auth (simple - same as before) ───────────────────────
+
+const VALID_USERS = {
+  'managerm13': { password: 'm13', division: 'M13' }
+};
+
+function authUser(username, password) {
+  const u = VALID_USERS[username];
+  return (u && u.password === password) ? u : null;
+}
+
+// ── Month helpers ─────────────────────────────────────────
+
+const MONTH_SHEET_NAMES = {
+  2:'Febrero 26',3:'Marzo 26',4:'Abril 26',5:'Mayo 26',6:'Junio 26',
+  7:'Julio 26',8:'Agosto 26',9:'Septiembre 26',10:'Octubre 26'
+};
+
+function currentMonth() { return new Date().getMonth() + 1; }
+
+// ════════════════════════════════════════════════════════════
+// HIGH-LEVEL API — same interface as the old Apps Script api()
+// Each function handles one "action"
+// ════════════════════════════════════════════════════════════
+
+async function api(payload) {
+  const { action } = payload;
+
+  if (action === 'loginAndDates')    return apiLoginAndDates(payload);
+  if (action === 'getDates')         return apiGetDates(payload);
+  if (action === 'getPlayers')       return apiGetPlayers(payload);
+  if (action === 'getPlayersForDate')return apiGetPlayers(payload);
+  if (action === 'saveAttendance')   return apiSaveAttendance(payload);
+  if (action === 'planningInit')     return apiPlanningInit(payload);
+  if (action === 'getPlanningData')  return apiGetPlanningData(payload);
+  if (action === 'savePlanningData') return apiSavePlanningData(payload);
+  if (action === 'getSheetData')     return apiGetSheetData(payload);
+  if (action === 'getMedicalData')   return apiGetMedicalData(payload);
+  if (action === 'saveMedicalRecord')return apiSaveMedicalRecord(payload);
+  if (action === 'getGiraData')      return apiGetGiraData(payload);
+  if (action === 'saveGiraInscripto')return apiSaveGiraInscripto(payload);
+  if (action === 'saveGiraGasto')    return apiSaveGiraGasto(payload);
+  if (action === 'deleteGiraGasto')  return apiDeleteGiraGasto(payload);
+  if (action === 'saveFixture')      return apiSaveFixture(payload);
+  if (action === 'clearFixture')     return apiClearFixture(payload);
+
+  return { ok: false, error: 'Accion no reconocida: ' + action };
+}
+
+// ── LOGIN + DATES ─────────────────────────────────────────
+
+async function apiLoginAndDates(payload) {
+  const user = authUser(payload.username, payload.password);
+  if (!user) return { ok: false, error: 'Usuario o contrasena incorrectos' };
+
+  const datesResult = await apiGetDates({ month: payload.month });
+  return {
+    ok:        true,
+    division:  user.division,
+    username:  payload.username,
+    dates:     datesResult.dates,
+    sheetName: datesResult.sheetName
+  };
+}
+
+// ── DATES ─────────────────────────────────────────────────
+
+async function apiGetDates(payload) {
+  const month     = payload.month ? parseInt(payload.month) : currentMonth();
+  const sheetName = MONTH_SHEET_NAMES[month] || 'Mes ' + month;
+
+  // Get start/end of month
+  const year      = new Date().getFullYear();
+  const monthPad  = String(month).padStart(2,'0');
+  const dateFrom  = year + '-' + monthPad + '-01';
+  const dateTo    = year + '-' + monthPad + '-31';
+
+  // Get all distinct dates with attendance in this month
+  const rows = await supaGet('asistencia', {
+    select: 'fecha',
+    fecha:  'gte.' + dateFrom,
+    order:  'fecha.asc'
+  });
+
+  // Also get dates up to end of month
+  const rows2 = await supaGet('asistencia', {
+    select: 'fecha',
+    fecha:  'lte.' + dateTo + '&fecha=gte.' + dateFrom,
+    order:  'fecha.asc'
+  });
+
+  // Deduplicate dates
+  const dateSet = new Set();
+  [...rows, ...rows2].forEach(r => dateSet.add(r.fecha));
+
+  const dates = [...dateSet].sort().map((d, i) => ({
+    col:     i + 4, // keep col for backward compat
+    date:    d,
+    display: d.split('-').reverse().slice(0,2).join('/')
+  }));
+
+  return { ok: true, dates, sheetName };
+}
+
+// ── PLAYERS ───────────────────────────────────────────────
+
+async function apiGetPlayers(payload) {
+  const month     = currentMonth();
+  const sheetName = MONTH_SHEET_NAMES[month] || 'Mes ' + month;
+  const dateCol   = payload.dateCol || null;
+  const fecha     = payload.date    || null;
+
+  // Get all players
+  const jugadores = await supaGet('jugadores', { select: 'id,nombre,apodo', order: 'nombre.asc' });
+
+  // Get attendance for this date if provided
+  let attendanceMap = {};
+  if (fecha) {
+    const att = await supaGet('asistencia', {
+      select:  'jugador_id,estado',
+      fecha:   'eq.' + fecha
+    });
+    att.forEach(a => { attendanceMap[a.jugador_id] = a.estado; });
+  }
+
+  const players = jugadores.map((j, i) => ({
+    row:     j.id,
+    name:    j.nombre,
+    apodo:   j.apodo || '',
+    novedad: '',
+    status:  attendanceMap[j.id] || null
+  }));
+
+  return { ok: true, players, sheetName };
+}
+
+// ── SAVE ATTENDANCE ───────────────────────────────────────
+
+async function apiSaveAttendance(payload) {
+  const { attendance, date, sheetName } = payload;
+  if (!attendance || attendance.length === 0) return { ok: true, saved: 0 };
+
+  // Use the date from payload, or derive from sheetName
+  const fecha = date || payload.fecha;
+  if (!fecha) return { ok: false, error: 'Falta la fecha' };
+
+  const rows = attendance.map(a => ({
+    jugador_id: a.row,
+    fecha:      fecha,
+    estado:     normalizeEstado(a.state)
+  }));
+
+  await supaUpsert('asistencia', rows);
+  return { ok: true, saved: rows.length };
+}
+
+function normalizeEstado(raw) {
+  const s = String(raw).trim().toLowerCase();
+  if (s === 'presente')                              return 'Presente';
+  if (s === 'lesionado presente' || s === 'lesionado') return 'Lesionado Presente';
+  if (s === 'ausente')                               return 'Ausente';
+  if (s.includes('aviso'))                           return 'Ausente, aviso';
+  return raw;
+}
+
+// ── PLANNING INIT ─────────────────────────────────────────
+
+async function apiPlanningInit(payload) {
+  const [jugadores, posRows, equipoRows, eqPosRows] = await Promise.all([
+    supaGet('jugadores',         { select: 'id,nombre,apodo', order: 'nombre.asc' }),
+    supaGet('posiciones',        { select: '*' }),
+    supaGet('equipos',           { select: '*', order: 'id.asc' }),
+    supaGet('equipo_posiciones', { select: '*' })
+  ]);
+
+  const players = jugadores.map(j => ({
+    row: j.id, name: j.nombre, apodo: j.apodo || '', novedad: '', status: null
+  }));
+
+  const playersPos = jugadores.map(j => {
+    const pos = posRows.find(p => p.jugador_id === j.id) || {};
+    return {
+      id:                 String(j.id),
+      name:               j.nombre,
+      apodo:              j.apodo || '',
+      primary_position:   pos.posicion_principal  || '',
+      secondary_position: pos.posicion_alternativa || ''
+    };
+  });
+
+  const lineups = equipoRows.map(eq => {
+    const positions = {};
+    eqPosRows.filter(ep => ep.equipo_id === eq.id).forEach(ep => {
+      if (ep.jugador_id) positions[ep.posicion] = String(ep.jugador_id);
+    });
+    return { team_id: eq.team_key, team_name: eq.nombre, positions };
+  });
+
+  return { ok: true, players, playersPos, lineups };
+}
+
+// ── GET PLANNING DATA ─────────────────────────────────────
+
+async function apiGetPlanningData(payload) {
+  return apiPlanningInit(payload);
+}
+
+// ── SAVE PLANNING DATA ────────────────────────────────────
+
+async function apiSavePlanningData(payload) {
+  const { dataType } = payload;
+
+  if (dataType === 'positions') {
+    const records = payload.records || [];
+    for (const r of records) {
+      await supaUpsert('posiciones', {
+        jugador_id:           parseInt(r.id),
+        posicion_principal:   r.primary_position   || null,
+        posicion_alternativa: r.secondary_position || null,
+        updated_at:           new Date().toISOString()
+      });
+    }
+    return { ok: true, saved: records.length, type: 'positions' };
+  }
+
+  if (dataType === 'lineups') {
+    const lineups = payload.lineups || [];
+    for (const lineup of lineups) {
+      // Upsert equipo
+      const eq = await supaUpsert('equipos', {
+        team_key: lineup.team_id,
+        nombre:   lineup.team_name
+      });
+      const equipoId = eq[0]?.id;
+      if (!equipoId) continue;
+
+      // Delete old positions and reinsert
+      await supaDelete('equipo_posiciones', 'equipo_id=eq.' + equipoId);
+      const posRows = Object.entries(lineup.positions).map(([pos, jugId]) => ({
+        equipo_id:  equipoId,
+        posicion:   pos,
+        jugador_id: parseInt(jugId) || null
+      }));
+      if (posRows.length > 0) await supaPost('equipo_posiciones', posRows);
+    }
+    return { ok: true, saved: lineups.length, type: 'lineups' };
+  }
+
+  return { ok: false, error: 'dataType no reconocido' };
+}
+
+// ── SHEET DATA (for stats) ────────────────────────────────
+
+async function apiGetSheetData(payload) {
+  const month    = payload.month ? parseInt(payload.month) : currentMonth();
+  const year     = new Date().getFullYear();
+  const monthPad = String(month).padStart(2,'0');
+  const dateFrom = year + '-' + monthPad + '-01';
+  const dateTo   = year + '-' + monthPad + '-31';
+  const sheetName = MONTH_SHEET_NAMES[month] || 'Mes ' + month;
+
+  const [jugadores, attRows] = await Promise.all([
+    supaGet('jugadores', { select: 'id,nombre,apodo', order: 'nombre.asc' }),
+    supaGet('asistencia', {
+      select: 'jugador_id,fecha,estado',
+      fecha:  'gte.' + dateFrom + '&fecha=lte.' + dateTo,
+      order:  'fecha.asc'
+    })
+  ]);
+
+  // Build dates list
+  const dateSet = new Set(attRows.map(a => a.fecha));
+  const dates   = [...dateSet].sort();
+
+  // Build players with records
+  const players = jugadores.map(j => {
+    const records = {};
+    attRows.filter(a => a.jugador_id === j.id).forEach(a => {
+      records[a.fecha] = a.estado;
+    });
+    return { name: j.nombre, apodo: j.apodo || '', records };
+  }).filter(p => Object.keys(p.records).length > 0);
+
+  return { ok: true, players, dates, sheetName };
+}
+
+// ── MEDICAL DATA ──────────────────────────────────────────
+
+async function apiGetMedicalData(payload) {
+  const [cfgRows, nmRows, jugadores] = await Promise.all([
+    supaGet('nm_config',        { select: 'tipo,valor', order: 'orden.asc' }),
+    supaGet('novedades_medicas', { select: '*', order: 'id.desc' }),
+    supaGet('jugadores',        { select: 'id,nombre,apodo' })
+  ]);
+
+  const tipos   = cfgRows.filter(r => r.tipo === 'tipo_lesion').map(r => r.valor);
+  const estados = cfgRows.filter(r => r.tipo === 'estado_actividad').map(r => r.valor);
+
+  const jugMap = {};
+  jugadores.forEach(j => { jugMap[j.id] = j.apodo || j.nombre; });
+
+  const records = nmRows.map(r => ({
+    id:               r.id,
+    jugador:          jugMap[r.jugador_id] || String(r.jugador_id),
+    tipo:             r.tipo,
+    tipoOtro:         r.tipo_otro || '',
+    descripcion:      r.descripcion || '',
+    fechaInicio:      r.fecha_inicio || '',
+    fechaAlta:        r.fecha_alta   || '',
+    estadosActividad: r.estados_actividad || [],
+    estado:           r.estado || 'Activa',
+    fechaCarga:       r.fecha_carga || ''
+  }));
+
+  return { ok: true, config: { tipos, estados }, records };
+}
+
+// ── SAVE MEDICAL RECORD ───────────────────────────────────
+
+async function apiSaveMedicalRecord(payload) {
+  const r = payload.record;
+  if (!r) return { ok: false, error: 'Sin datos' };
+
+  // Resolve jugador_id from apodo/name
+  const jugadores = await supaGet('jugadores', { select: 'id,nombre,apodo' });
+  const jug = jugadores.find(j =>
+    (j.apodo && j.apodo === r.jugador) || j.nombre === r.jugador
+  );
+  if (!jug) return { ok: false, error: 'Jugador no encontrado: ' + r.jugador };
+
+  const row = {
+    id:                r.id,
+    jugador_id:        jug.id,
+    tipo:              r.tipo,
+    tipo_otro:         r.tipoOtro || null,
+    descripcion:       r.descripcion || null,
+    fecha_inicio:      r.fechaInicio || null,
+    fecha_alta:        r.fechaAlta   || null,
+    estados_actividad: r.estadosActividad || [],
+    estado:            r.estado || 'Activa',
+    fecha_carga:       r.fechaCarga || new Date().toISOString().split('T')[0],
+    updated_at:        new Date().toISOString()
+  };
+
+  await supaUpsert('novedades_medicas', row);
+  return { ok: true };
+}
+
+// ── GIRA DATA ─────────────────────────────────────────────
+
+async function apiGetGiraData(payload) {
+  const [jugadores, insRows, gasRows] = await Promise.all([
+    supaGet('jugadores',       { select: 'id,nombre,apodo', order: 'nombre.asc' }),
+    supaGet('gira_inscriptos', { select: '*' }),
+    supaGet('gira_gastos',     { select: '*', order: 'fecha.asc' })
+  ]);
+
+  const inscriptos = insRows.map(r => {
+    const jug = jugadores.find(j => j.id === r.jugador_id);
+    return {
+      id:     jug ? (jug.apodo || jug.nombre) : String(r.jugador_id),
+      name:   jug ? jug.nombre : '',
+      apodo:  jug ? (jug.apodo || '') : '',
+      cuotas: [r.c1, r.c2, r.c3, r.c4, r.c5]
+    };
+  });
+
+  const gastos = gasRows.map(r => ({
+    id:        r.id,
+    ticket:    r.ticket    || '',
+    categoria: r.categoria || '',
+    desc:      r.descripcion || '',
+    importe:   parseFloat(r.importe) || 0,
+    fecha:     r.fecha || ''
+  }));
+
+  return { ok: true, inscriptos, gastos };
+}
+
+// ── SAVE GIRA INSCRIPTO ───────────────────────────────────
+
+async function apiSaveGiraInscripto(payload) {
+  const p = payload.inscripto;
+  if (!p) return { ok: false, error: 'Sin datos' };
+
+  const jugadores = await supaGet('jugadores', { select: 'id,nombre,apodo' });
+  const jug = jugadores.find(j => (j.apodo && j.apodo === p.id) || j.nombre === p.id);
+  if (!jug) return { ok: false, error: 'Jugador no encontrado' };
+
+  await supaUpsert('gira_inscriptos', {
+    jugador_id: jug.id,
+    c1: p.cuotas[0] || false,
+    c2: p.cuotas[1] || false,
+    c3: p.cuotas[2] || false,
+    c4: p.cuotas[3] || false,
+    c5: p.cuotas[4] || false,
+    updated_at: new Date().toISOString()
+  });
+  return { ok: true };
+}
+
+// ── SAVE GIRA GASTO ───────────────────────────────────────
+
+async function apiSaveGiraGasto(payload) {
+  const g = payload.gasto;
+  if (!g) return { ok: false, error: 'Sin datos' };
+
+  await supaUpsert('gira_gastos', {
+    id:          g.id,
+    ticket:      g.ticket     || null,
+    categoria:   g.categoria,
+    descripcion: g.desc,
+    importe:     g.importe,
+    fecha:       g.fecha      || null
+  });
+  return { ok: true };
+}
+
+// ── DELETE GIRA GASTO ─────────────────────────────────────
+
+async function apiDeleteGiraGasto(payload) {
+  await supaDelete('gira_gastos', 'id=eq.' + payload.id);
+  return { ok: true };
+}
+
+// ── FIXTURE ───────────────────────────────────────────────
+
+async function apiSaveFixture(payload) {
+  const rows = payload.rows || [];
+  // Clear existing and insert new
+  await supaDelete('fixture', 'id=gt.0');
+  if (rows.length > 0) {
+    await supaPost('fixture', rows.map(r => ({
+      cancha:      r.cancha,
+      hora_inicio: r.hora + ':00',
+      hora_fin:    r.fin  + ':00',
+      local:       r.local,
+      visitante:   r.visit,
+      pasa_limite: r.overLim === 'SI'
+    })));
+  }
+  return { ok: true, saved: rows.length };
+}
+
+async function apiClearFixture(payload) {
+  await supaDelete('fixture', 'id=gt.0');
+  return { ok: true };
 }
 
 </script>
