@@ -4206,69 +4206,62 @@ async function apiGetDates(payload) {
   const month     = payload.month ? parseInt(payload.month) : currentMonth();
   const sheetName = MONTH_SHEET_NAMES[month] || 'Mes ' + month;
 
-  // Get start/end of month
-  const year      = new Date().getFullYear();
-  const monthPad  = String(month).padStart(2,'0');
-  const dateFrom  = year + '-' + monthPad + '-01';
-  const dateTo    = year + '-' + monthPad + '-31';
+  const year     = new Date().getFullYear();
+  const monthPad = String(month).padStart(2,'0');
+  const from     = year + '-' + monthPad + '-01';
+  const to       = year + '-' + monthPad + '-31';
 
-  // Get all distinct dates with attendance in this month
-  const rows = await supaGet('asistencia', {
-    select: 'fecha',
-    fecha:  'gte.' + dateFrom,
-    order:  'fecha.asc'
-  });
-
-  // Also get dates up to end of month
-  const rows2 = await supaGet('asistencia', {
-    select: 'fecha',
-    fecha:  'lte.' + dateTo + '&fecha=gte.' + dateFrom,
-    order:  'fecha.asc'
-  });
-
-  // Deduplicate dates
-  const dateSet = new Set();
-  [...rows, ...rows2].forEach(r => dateSet.add(r.fecha));
-
-  const dates = [...dateSet].sort().map((d, i) => ({
-    col:     i + 4, // keep col for backward compat
-    date:    d,
-    display: d.split('-').reverse().slice(0,2).join('/')
-  }));
-
-  return { ok: true, dates, sheetName };
+  try {
+    const res = await fetch(
+      SUPA_URL + '/asistencia?select=fecha&fecha=gte.' + from + '&fecha=lte.' + to + '&order=fecha.asc',
+      { headers: SUPA_HEADERS }
+    );
+    if (!res.ok) return { ok: true, dates: [], sheetName };
+    const rows    = await res.json();
+    const dateSet = new Set(rows.map(function(r){ return r.fecha; }));
+    const dates   = [...dateSet].sort().map(function(d, i) {
+      return { col: i+4, date: d, display: d.split('-').reverse().slice(0,2).join('/') };
+    });
+    return { ok: true, dates: dates, sheetName: sheetName };
+  } catch(e) {
+    return { ok: true, dates: [], sheetName: sheetName };
+  }
 }
 
 // ── PLAYERS ───────────────────────────────────────────────
 
 async function apiGetPlayers(payload) {
-  const month     = currentMonth();
-  const sheetName = MONTH_SHEET_NAMES[month] || 'Mes ' + month;
-  const dateCol   = payload.dateCol || null;
-  const fecha     = payload.date    || null;
+  const sheetName = MONTH_SHEET_NAMES[currentMonth()] || 'Mes actual';
+  const fecha     = payload.date || null;
 
-  // Get all players
-  const jugadores = await supaGet('jugadores', { select: 'id,nombre,apodo', order: 'nombre.asc' });
+  try {
+    const jugRes = await fetch(
+      SUPA_URL + '/jugadores?select=id,nombre,apodo&order=nombre.asc',
+      { headers: SUPA_HEADERS }
+    );
+    if (!jugRes.ok) return { ok: false, error: 'Error cargando jugadores' };
+    const jugadores = await jugRes.json();
 
-  // Get attendance for this date if provided
-  let attendanceMap = {};
-  if (fecha) {
-    const att = await supaGet('asistencia', {
-      select:  'jugador_id,estado',
-      fecha:   'eq.' + fecha
+    var attendanceMap = {};
+    if (fecha) {
+      const attRes = await fetch(
+        SUPA_URL + '/asistencia?select=jugador_id,estado&fecha=eq.' + fecha,
+        { headers: SUPA_HEADERS }
+      );
+      if (attRes.ok) {
+        const att = await attRes.json();
+        att.forEach(function(a){ attendanceMap[a.jugador_id] = a.estado; });
+      }
+    }
+
+    const players = jugadores.map(function(j) {
+      return { row: j.id, name: j.nombre, apodo: j.apodo || '', novedad: '', status: attendanceMap[j.id] || null };
     });
-    att.forEach(a => { attendanceMap[a.jugador_id] = a.estado; });
+
+    return { ok: true, players: players, sheetName: sheetName };
+  } catch(e) {
+    return { ok: false, error: 'Error: ' + e.message };
   }
-
-  const players = jugadores.map((j, i) => ({
-    row:     j.id,
-    name:    j.nombre,
-    apodo:   j.apodo || '',
-    novedad: '',
-    status:  attendanceMap[j.id] || null
-  }));
-
-  return { ok: true, players, sheetName };
 }
 
 // ── SAVE ATTENDANCE ───────────────────────────────────────
