@@ -4082,29 +4082,24 @@ const SUPA_HEADERS = {
 
 // ── Low-level REST helpers ────────────────────────────────
 
-async function supaGetRaw(path) {
-  const res = await fetch(SUPA_URL + '/' + path, { headers: SUPA_HEADERS });
-  if (!res.ok) throw new Error('GET ' + path + ' failed: ' + res.status);
-  return res.json();
-}
-
 async function supaGet(table, params) {
+  // Construimos el query string manualmente para preservar la sintaxis PostgREST
+  // (URLSearchParams encodea puntos y = rompiendo filtros como fecha=gte.2026-01-01)
   let qs = '';
   if (params) {
     const parts = [];
     for (const [k, v] of Object.entries(params)) {
-      if (String(v).includes('&')) {
-        parts.push(k + '=' + v);
-      } else {
-        parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v)));
-      }
+      parts.push(k + '=' + String(v));
     }
     qs = '?' + parts.join('&');
   }
   const res = await fetch(SUPA_URL + '/' + table + qs, {
     headers: SUPA_HEADERS
   });
-  if (!res.ok) throw new Error('GET ' + table + ' failed: ' + res.status);
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.status);
+    throw new Error('GET ' + table + ' failed: ' + res.status + ' — ' + errText);
+  }
   return res.json();
 }
 
@@ -4152,6 +4147,24 @@ async function supaDelete(table, filter) {
   if (!res.ok) throw new Error('DELETE ' + table + ' failed: ' + res.status);
   return res.ok;
 }
+
+// ── Diagnóstico de conexión Supabase ─────────────────────
+// Llamar desde consola: testSupabase()
+window.testSupabase = async function() {
+  console.log('=== TEST SUPABASE ===');
+  console.log('URL:', SUPA_URL);
+  const tables = ['jugadores','asistencia','posiciones','equipos','equipo_posiciones','novedades_medicas','gira_inscriptos','gira_gastos','nm_config','fixture'];
+  for (const t of tables) {
+    try {
+      const r = await fetch(SUPA_URL + '/' + t + '?select=*&limit=1', { headers: SUPA_HEADERS });
+      const body = await r.text();
+      console.log(t + ' → HTTP ' + r.status + (r.ok ? ' ✓' : ' ✗') + (r.ok ? '' : ' | ' + body.substring(0,120)));
+    } catch(e) {
+      console.log(t + ' → ERROR:', e.message);
+    }
+  }
+  console.log('=== FIN TEST ===');
+};
 
 // ── Auth (simple - same as before) ───────────────────────
 
@@ -4234,7 +4247,11 @@ async function apiGetDates(payload) {
       SUPA_URL + '/asistencia?select=fecha&fecha=gte.' + from + '&fecha=lte.' + to + '&order=fecha.asc',
       { headers: SUPA_HEADERS }
     );
-    if (!res.ok) return { ok: true, dates: [], sheetName };
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.error('[apiGetDates] HTTP ' + res.status + ':', errBody);
+      return { ok: true, dates: [], sheetName };
+    }
     const rows    = await res.json();
     const dateSet = new Set(rows.map(function(r){ return r.fecha; }));
     const dates   = [...dateSet].sort().map(function(d, i) {
@@ -4242,6 +4259,7 @@ async function apiGetDates(payload) {
     });
     return { ok: true, dates: dates, sheetName: sheetName };
   } catch(e) {
+    console.error('[apiGetDates] excepción:', e);
     return { ok: true, dates: [], sheetName: sheetName };
   }
 }
@@ -4409,7 +4427,10 @@ async function apiGetSheetData(payload) {
 
   const [jugadores, attRows] = await Promise.all([
     supaGet('jugadores', { select: 'id,nombre,apodo', order: 'nombre.asc' }),
-    supaGetRaw('asistencia?select=jugador_id,fecha,estado&fecha=gte.' + dateFrom + '&fecha=lte.' + dateTo + '&order=fecha.asc')
+    fetch(
+      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + dateFrom + '&fecha=lte.' + dateTo + '&order=fecha.asc',
+      { headers: SUPA_HEADERS }
+    ).then(r => r.ok ? r.json() : [])
   ]);
 
   // Build dates list
