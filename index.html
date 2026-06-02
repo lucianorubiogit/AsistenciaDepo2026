@@ -4083,8 +4083,6 @@ const SUPA_HEADERS = {
 // ── Low-level REST helpers ────────────────────────────────
 
 async function supaGet(table, params) {
-  // Construimos el query string manualmente para preservar la sintaxis PostgREST
-  // (URLSearchParams encodea puntos y = rompiendo filtros como fecha=gte.2026-01-01)
   let qs = '';
   if (params) {
     const parts = [];
@@ -4093,9 +4091,7 @@ async function supaGet(table, params) {
     }
     qs = '?' + parts.join('&');
   }
-  const res = await fetch(SUPA_URL + '/' + table + qs, {
-    headers: SUPA_HEADERS
-  });
+  const res = await fetch(SUPA_URL + '/' + table + qs, { headers: SUPA_HEADERS });
   if (!res.ok) {
     const errText = await res.text().catch(() => res.status);
     throw new Error('GET ' + table + ' failed: ' + res.status + ' — ' + errText);
@@ -4148,8 +4144,7 @@ async function supaDelete(table, filter) {
   return res.ok;
 }
 
-// ── Diagnóstico de conexión Supabase ─────────────────────
-// Llamar desde consola: testSupabase()
+// ── Diagnóstico Supabase (ejecutar testSupabase() en consola) ───
 window.testSupabase = async function() {
   console.log('=== TEST SUPABASE ===');
   console.log('URL:', SUPA_URL);
@@ -4159,9 +4154,7 @@ window.testSupabase = async function() {
       const r = await fetch(SUPA_URL + '/' + t + '?select=*&limit=1', { headers: SUPA_HEADERS });
       const body = await r.text();
       console.log(t + ' → HTTP ' + r.status + (r.ok ? ' ✓' : ' ✗') + (r.ok ? '' : ' | ' + body.substring(0,120)));
-    } catch(e) {
-      console.log(t + ' → ERROR:', e.message);
-    }
+    } catch(e) { console.log(t + ' → ERROR:', e.message); }
   }
   console.log('=== FIN TEST ===');
 };
@@ -4240,18 +4233,16 @@ async function apiGetDates(payload) {
   const year     = new Date().getFullYear();
   const monthPad = String(month).padStart(2,'0');
   const from     = year + '-' + monthPad + '-01';
-  const to       = year + '-' + monthPad + '-31';
+  // Último día real del mes: primer día del mes siguiente menos 1
+  const lastDay  = new Date(year, month, 0).getDate();
+  const to       = year + '-' + monthPad + '-' + String(lastDay).padStart(2,'0');
 
   try {
     const res = await fetch(
       SUPA_URL + '/asistencia?select=fecha&fecha=gte.' + from + '&fecha=lte.' + to + '&order=fecha.asc',
       { headers: SUPA_HEADERS }
     );
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      console.error('[apiGetDates] HTTP ' + res.status + ':', errBody);
-      return { ok: true, dates: [], sheetName };
-    }
+    if (!res.ok) return { ok: true, dates: [], sheetName };
     const rows    = await res.json();
     const dateSet = new Set(rows.map(function(r){ return r.fecha; }));
     const dates   = [...dateSet].sort().map(function(d, i) {
@@ -4259,7 +4250,6 @@ async function apiGetDates(payload) {
     });
     return { ok: true, dates: dates, sheetName: sheetName };
   } catch(e) {
-    console.error('[apiGetDates] excepción:', e);
     return { ok: true, dates: [], sheetName: sheetName };
   }
 }
@@ -4422,7 +4412,8 @@ async function apiGetSheetData(payload) {
   const year     = new Date().getFullYear();
   const monthPad = String(month).padStart(2,'0');
   const dateFrom = year + '-' + monthPad + '-01';
-  const dateTo   = year + '-' + monthPad + '-31';
+  const lastDay2 = new Date(year, month, 0).getDate();
+  const dateTo   = year + '-' + monthPad + '-' + String(lastDay2).padStart(2,'0');
   const sheetName = MONTH_SHEET_NAMES[month] || 'Mes ' + month;
 
   const [jugadores, attRows] = await Promise.all([
