@@ -711,7 +711,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.17</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.19</div>
     </div>
   </div>
 </div>
@@ -1696,8 +1696,8 @@ async function loadAttendanceScreen() {
   try {
     // Mandamos dateCol y sheetName para que el servidor traiga los estados ya cargados
     const data = await api({
-      action:    "getPlayers",
-      dateCol:   state.selectedDate.col,
+      action:    "getPlayersForDate",
+      date:      state.selectedDate.date,
       sheetName: state.sheetName
     });
     if (!data.ok) { showToast("Error: " + data.error); return; }
@@ -1845,9 +1845,8 @@ async function saveAttendance() {
       try {
         const fresh = await api({
           action:    "getPlayersForDate",
-          dateCol:   state.selectedDate.col,
-          sheetName: state.sheetName,
-          date:      state.selectedDate.date
+          date:      state.selectedDate.date,
+          sheetName: state.sheetName
         });
         if (fresh.ok) {
           state.players = fresh.players;
@@ -4444,7 +4443,7 @@ async function apiGetSheetData(payload) {
 
 async function apiGetMedicalData(payload) {
   const [cfgRows, nmRows, jugadores] = await Promise.all([
-    supaGet('nm_config',        { select: 'tipo,valor', order: 'orden.asc' }),
+    supaGet('nm_config',        { select: 'tipo,valor,orden', order: 'orden.asc' }),
     supaGet('novedades_medicas', { select: '*', order: 'id.desc' }),
     supaGet('jugadores',        { select: 'id,nombre,apodo' })
   ]);
