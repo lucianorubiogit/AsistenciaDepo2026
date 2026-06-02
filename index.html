@@ -711,7 +711,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.21</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.22</div>
     </div>
   </div>
 </div>
@@ -813,7 +813,7 @@ textarea.med-form-input { font-family:inherit; }
   <div class="save-bar" id="save-bar" style="display:none">
     <button class="save-btn" id="save-btn" onclick="saveAttendance()">Guardar asistencia</button>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="cancel-btn" style="flex:1;margin-top:0" onclick="showHomeScreen()">Cerrar</button>
+      <button class="cancel-btn" style="flex:1;margin-top:0" onclick="showScreen('dates')">Cerrar</button>
       <button class="cancel-btn" style="flex:1;margin-top:0;color:#002395;border-color:#002395"
         onclick="openInformarModal()">📤 Informar</button>
     </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
                border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
         Guardar equipo
       </button>
-      <button onclick="showScreen('dates')"
+      <button onclick="showHomeScreen()"
         style="flex:1;padding:13px;background:transparent;color:#666;
                border:1px solid #ddd;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer">
         Cerrar
@@ -1830,7 +1830,7 @@ async function saveAttendance() {
       return;
     }
 
-    btn.textContent      = "✓ Guardado en Google Sheets";
+    btn.textContent      = "✓ Asistencia guardada";
     btn.style.background = "#2e7d32";
     showToast(data.saved + " registros guardados");
 
@@ -1997,7 +1997,7 @@ let planState = {
 };
 
 // ── HELPERS ────────────────────────────────────────────────
-// ── PERSISTENCE: Google Sheets via Apps Script ─────────────
+// ── PERSISTENCE: Supabase ───────────────────────────────────
 // localStorage is used only as cache for speed.
 // Source of truth is always the Sheet.
 
@@ -2246,7 +2246,7 @@ async function savePositions() {
   try {
     const res = await savePositionsToServer();
     if (res.ok) {
-      showToast('✓ Posiciones guardadas en Google Sheets');
+      showToast('✓ Posiciones guardadas');
     } else {
       showToast('Error al guardar: ' + res.error);
     }
@@ -2332,7 +2332,7 @@ async function saveLineup() {
   try {
     const res = await saveLineupsToServer();
     if (res && res.ok) {
-      showToast('✓ Equipo guardado en Google Sheets');
+      showToast('✓ Equipo guardado');
     } else {
       saveToStorage();
       showToast('Guardado localmente');
@@ -3042,7 +3042,7 @@ async function saveFixtureToSheet() {
 
   try {
     const res = await api({ action: 'saveFixture', rows });
-    if (res.ok) showToast('✓ Fixture guardado en planilla');
+    if (res.ok) showToast('✓ Fixture guardado');
     else showToast('Error: ' + res.error);
   } catch(e) {
     showToast('Error de conexión');
@@ -3050,7 +3050,7 @@ async function saveFixtureToSheet() {
 }
 
 async function clearFixtureSheet() {
-  if (!confirm('¿Borrar el fixture guardado en la planilla?')) return;
+  if (!confirm('¿Borrar el fixture guardado?')) return;
   try {
     const res = await api({ action: 'clearFixture' });
     if (res.ok) showToast('Fixture borrado');
