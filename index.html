@@ -702,6 +702,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
     <div class="login-title">Rugby Infantil ADF</div>
     <div class="login-sub">Sistema de Asistencia y Planificación</div>
+    <div style="color:rgba(168,184,240,0.5);font-size:11px;margin-top:-28px;margin-bottom:10px;">V 1.0.16</div>
     <div class="login-card">
       <div class="login-label">Usuario</div>
       <input id="login-user" class="login-input" type="text" autocapitalize="none"
@@ -4081,8 +4082,25 @@ const SUPA_HEADERS = {
 
 // ── Low-level REST helpers ────────────────────────────────
 
+async function supaGetRaw(path) {
+  const res = await fetch(SUPA_URL + '/' + path, { headers: SUPA_HEADERS });
+  if (!res.ok) throw new Error('GET ' + path + ' failed: ' + res.status);
+  return res.json();
+}
+
 async function supaGet(table, params) {
-  const qs  = params ? '?' + new URLSearchParams(params).toString() : '';
+  let qs = '';
+  if (params) {
+    const parts = [];
+    for (const [k, v] of Object.entries(params)) {
+      if (String(v).includes('&')) {
+        parts.push(k + '=' + v);
+      } else {
+        parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v)));
+      }
+    }
+    qs = '?' + parts.join('&');
+  }
   const res = await fetch(SUPA_URL + '/' + table + qs, {
     headers: SUPA_HEADERS
   });
@@ -4391,11 +4409,7 @@ async function apiGetSheetData(payload) {
 
   const [jugadores, attRows] = await Promise.all([
     supaGet('jugadores', { select: 'id,nombre,apodo', order: 'nombre.asc' }),
-    supaGet('asistencia', {
-      select: 'jugador_id,fecha,estado',
-      fecha:  'gte.' + dateFrom + '&fecha=lte.' + dateTo,
-      order:  'fecha.asc'
-    })
+    supaGetRaw('asistencia?select=jugador_id,fecha,estado&fecha=gte.' + dateFrom + '&fecha=lte.' + dateTo + '&order=fecha.asc')
   ]);
 
   // Build dates list
