@@ -2738,6 +2738,47 @@ async function enterFixture() {
 
   renderDepoTeams();
   if (fixState.visitors.length === 0) addVisitor();
+
+  // Cargar fixture guardado en Supabase y mostrarlo en la solapa Fixture
+  try {
+    const rows = await supaGet('fixture', { select: '*', order: 'id.asc' });
+    if (rows && rows.length > 0) {
+      // Reconstruir generatedSlots desde los datos guardados
+      const schedule = [];
+      rows.forEach(r => {
+        // hora_inicio / hora_fin vienen como "HH:MM:SS" o "HH:MM"
+        const toMin = t => {
+          const parts = String(t).split(':');
+          return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        };
+        // Detectar cancha: "Cancha 1" → 0, "Cancha 2" → 1, etc.
+        const courtMatch = String(r.cancha || '').match(/(\d+)/);
+        const court = courtMatch ? parseInt(courtMatch[1]) - 1 : 0;
+        schedule.push({
+          court:     court,
+          startMin:  toMin(r.hora_inicio),
+          endMin:    toMin(r.hora_fin),
+          home:      r.local     || '',
+          away:      r.visitante || '',
+          overLimit: r.pasa_limite === true || r.pasa_limite === 'true',
+          homeId:    r.local     || '',
+          awayId:    r.visitante || ''
+        });
+      });
+
+      // Detectar número de canchas
+      const numCourts = Math.max(...schedule.map(s => s.court)) + 1;
+
+      // Guardar en estado y renderizar
+      fixState.generatedSlots = schedule;
+      fixState.params.numCourts = numCourts;
+      renderFixtureResult(schedule, numCourts, 0, schedule[0].startMin, 0);
+      switchFixTab('result');
+    }
+  } catch(e) {
+    // Si falla la carga, simplemente no mostramos nada
+    console.warn('No se pudo cargar el fixture guardado:', e.message);
+  }
 }
 
 function switchFixTab(tab) {
@@ -3758,8 +3799,6 @@ async function saveMedRecord() {
   if (!jugador)     { errEl.textContent = 'Seleccioná un jugador'; return; }
   if (!tipo)        { errEl.textContent = 'Seleccioná el tipo de novedad'; return; }
   if (!fechaInicio) { errEl.textContent = 'Ingresá la fecha de inicio'; return; }
-  const fechaAltaVal = document.getElementById('med-fecha-alta').value;
-  if (!fechaAltaVal) { errEl.textContent = 'Ingresá la fecha estimada de alta (requerida para registrar ausencias)'; return; }
 
   const record = {
     id:               medState.editingId || Date.now(),
@@ -3786,12 +3825,6 @@ async function saveMedRecord() {
   try {
     const res = await api({ action: 'saveMedicalRecord', record });
     if (!res.ok) { showToast('Error al guardar: ' + res.error); return; }
-
-    // Registrar ausencias automáticas si es novedad nueva (no edición)
-    if (!medState.editingId && record.fechaAlta) {
-      await registrarAusenciasMedicas(record);
-    }
-
     showToast('✓ Guardado');
   } catch(e) {
     showToast('Guardado localmente (sin conexión)');
@@ -3799,60 +3832,6 @@ async function saveMedRecord() {
 
   document.getElementById('med-form-modal').classList.remove('open');
   switchMedTab('active');
-}
-
-// ── AUSENCIAS AUTOMÁTICAS POR NOVEDAD MÉDICA ───────────────────────────
-
-function getTrainingDatesInRange(fechaInicioStr, fechaAltaStr) {
-  // Días de entrenamiento: lunes (1), jueves (4), sábado (6)
-  const TRAINING_DAYS = new Set([1, 4, 6]);
-  const dates = [];
-
-  // Parsear fechas como locales para evitar desfase de timezone
-  const [y1, m1, d1] = fechaInicioStr.split('-').map(Number);
-  const [y2, m2, d2] = fechaAltaStr.split('-').map(Number);
-  const start = new Date(y1, m1 - 1, d1);
-  const end   = new Date(y2, m2 - 1, d2);
-
-  const cur = new Date(start);
-  while (cur <= end) {
-    if (TRAINING_DAYS.has(cur.getDay())) {
-      const yyyy = cur.getFullYear();
-      const mm   = String(cur.getMonth() + 1).padStart(2, '0');
-      const dd   = String(cur.getDate()).padStart(2, '0');
-      dates.push(yyyy + '-' + mm + '-' + dd);
-    }
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
-}
-
-async function registrarAusenciasMedicas(record) {
-  // Obtener jugador_id buscando por apodo en state.players o planState.players
-  const allPlayers = planState.players.length > 0 ? planState.players : state.players;
-  const jugador = allPlayers.find(p =>
-    (p.apodo && p.apodo === record.jugador) || p.name === record.jugador
-  );
-  if (!jugador) return; // no encontrado, no bloqueamos el flujo
-
-  const jugador_id = jugador.row; // row = jugador_id en Supabase
-  const fechas = getTrainingDatesInRange(record.fechaInicio, record.fechaAlta);
-  if (fechas.length === 0) return;
-
-  // Insertar en Supabase una por una (upsert, sobreescribe estado existente)
-  const rows = fechas.map(f => ({
-    jugador_id: jugador_id,
-    fecha:      f,
-    estado:     'Ausente, aviso'
-  }));
-
-  try {
-    await supaUpsert('asistencia', rows, 'jugador_id,fecha');
-    showToast('✓ Guardado · ' + fechas.length + ' ausencia' + (fechas.length > 1 ? 's' : '') + ' registrada' + (fechas.length > 1 ? 's' : '') + ' automáticamente');
-  } catch(e) {
-    // No interrumpimos el flujo si falla el registro de ausencias
-    console.warn('No se pudieron registrar ausencias automáticas:', e.message);
-  }
 }
 
 // ── RESOLVE ───────────────────────────────────────────────
