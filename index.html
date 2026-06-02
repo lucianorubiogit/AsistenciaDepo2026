@@ -711,7 +711,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.19</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.21</div>
     </div>
   </div>
 </div>
@@ -4121,8 +4121,9 @@ async function supaPatch(table, filter, body) {
   return res.json();
 }
 
-async function supaUpsert(table, body) {
-  const res = await fetch(SUPA_URL + '/' + table, {
+async function supaUpsert(table, body, onConflict) {
+  const qs  = onConflict ? '?on_conflict=' + onConflict : '';
+  const res = await fetch(SUPA_URL + '/' + table + qs, {
     method:  'POST',
     headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body:    JSON.stringify(body)
@@ -4305,7 +4306,7 @@ async function apiSaveAttendance(payload) {
     estado:     normalizeEstado(a.state)
   }));
 
-  await supaUpsert('asistencia', rows);
+  await supaUpsert('asistencia', rows, 'jugador_id,fecha');
   return { ok: true, saved: rows.length };
 }
 
@@ -4373,7 +4374,7 @@ async function apiSavePlanningData(payload) {
         posicion_principal:   r.primary_position   || null,
         posicion_alternativa: r.secondary_position || null,
         updated_at:           new Date().toISOString()
-      });
+      }, 'jugador_id');
     }
     return { ok: true, saved: records.length, type: 'positions' };
   }
@@ -4385,7 +4386,7 @@ async function apiSavePlanningData(payload) {
       const eq = await supaUpsert('equipos', {
         team_key: lineup.team_id,
         nombre:   lineup.team_name
-      });
+      }, 'team_key');
       const equipoId = eq[0]?.id;
       if (!equipoId) continue;
 
@@ -4497,7 +4498,7 @@ async function apiSaveMedicalRecord(payload) {
     updated_at:        new Date().toISOString()
   };
 
-  await supaUpsert('novedades_medicas', row);
+  await supaUpsert('novedades_medicas', row, 'id');
   return { ok: true };
 }
 
@@ -4550,7 +4551,7 @@ async function apiSaveGiraInscripto(payload) {
     c4: p.cuotas[3] || false,
     c5: p.cuotas[4] || false,
     updated_at: new Date().toISOString()
-  });
+  }, 'jugador_id');
   return { ok: true };
 }
 
@@ -4567,7 +4568,7 @@ async function apiSaveGiraGasto(payload) {
     descripcion: g.desc,
     importe:     g.importe,
     fecha:       g.fecha      || null
-  });
+  }, 'id');
   return { ok: true };
 }
 
