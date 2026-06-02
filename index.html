@@ -711,7 +711,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.22</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.23</div>
     </div>
   </div>
 </div>
@@ -817,6 +817,9 @@ textarea.med-form-input { font-family:inherit; }
       <button class="cancel-btn" style="flex:1;margin-top:0;color:#002395;border-color:#002395"
         onclick="openInformarModal()">📤 Informar</button>
     </div>
+    <button class="cancel-btn" id="sheets-btn"
+      style="width:100%;margin-top:8px;color:#1a6e34;border-color:#1a6e34;font-weight:600"
+      onclick="exportToSheets()">📊 Exportar a Google Sheets</button>
   </div>
 </div>
 
@@ -1432,7 +1435,7 @@ textarea.med-form-input { font-family:inherit; }
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyvksWZyq7x8mQmcLG6kqRViIea2NlXJZZ-WYAsQp4gbRM6IjkU_TfSZCbfP7ed4DUA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwU39mwJMMDsOrocFdZB-028Ng7rxFuR_XNiqs0mVw0zuEgq9Rml8SxJijAStr2rUtX/exec";
 
 let state = {
   username:     "",
@@ -1884,6 +1887,99 @@ async function ensurePlayersLoaded() {
 }
 
 // ── INFORMAR ───────────────────────────────────────────────
+// ── EXPORTAR A GOOGLE SHEETS ───────────────────────────────
+
+async function exportToSheets() {
+  const marked = state.players.filter(p => p.status);
+  if (marked.length === 0) {
+    showToast("Marcá al menos un jugador antes de exportar");
+    return;
+  }
+
+  const btn = document.getElementById('sheets-btn');
+  btn.disabled    = true;
+  btn.textContent = "Exportando…";
+
+  try {
+    // Paso 1: obtener/crear la columna de la fecha en Google Sheets
+    const setupRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action:    'setupDateColumn',
+        username:  'managerm13',
+        password:  'm13',
+        fecha:     state.selectedDate.date,
+        sheetName: state.sheetName
+      })
+    }).then(r => r.json());
+
+    if (!setupRes.ok) {
+      showToast('Error Sheets: ' + setupRes.error);
+      btn.disabled    = false;
+      btn.textContent = "📊 Exportar a Google Sheets";
+      return;
+    }
+
+    const dateCol   = setupRes.dateCol;
+    const playerMap = setupRes.playerMap; // { apodo: rowNumber }
+
+    // Paso 2: armar attendance usando los números de fila del Sheet
+    const attendance = [];
+    state.players.forEach(p => {
+      if (!p.status) return;
+      // Buscar por apodo primero, luego por nombre normalizado
+      const key = p.apodo ? p.apodo.toLowerCase() : p.name.toLowerCase();
+      const row  = playerMap[key];
+      if (row) attendance.push({ row, state: p.status });
+    });
+
+    if (attendance.length === 0) {
+      showToast("No se encontraron jugadores en el Sheet para exportar");
+      btn.disabled    = false;
+      btn.textContent = "📊 Exportar a Google Sheets";
+      return;
+    }
+
+    // Paso 3: guardar en Google Sheets
+    const saveRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action:     'saveAttendance',
+        username:   'managerm13',
+        password:   'm13',
+        attendance,
+        dateCol,
+        sheetName:  state.sheetName
+      })
+    }).then(r => r.json());
+
+    if (!saveRes.ok) {
+      showToast('Error al guardar en Sheets: ' + saveRes.error);
+    } else {
+      btn.textContent      = "✓ Exportado";
+      btn.style.color      = "#fff";
+      btn.style.background = "#1a6e34";
+      btn.style.borderColor = "#1a6e34";
+      showToast(saveRes.saved + " registros exportados a Google Sheets");
+      setTimeout(() => {
+        btn.disabled          = false;
+        btn.textContent       = "📊 Exportar a Google Sheets";
+        btn.style.color       = "";
+        btn.style.background  = "";
+        btn.style.borderColor = "";
+      }, 3000);
+    }
+
+  } catch(e) {
+    showToast("Error de conexión con Google Sheets");
+  } finally {
+    if (btn.textContent === "Exportando…") {
+      btn.disabled    = false;
+      btn.textContent = "📊 Exportar a Google Sheets";
+    }
+  }
+}
+
 function openInformarModal() {
   const d = state.selectedDate;
   let dateLabel = d ? d.display : '';
