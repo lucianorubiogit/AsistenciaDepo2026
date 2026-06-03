@@ -4417,27 +4417,57 @@ async function apiGetPlayers(payload) {
   const fecha     = payload.date || null;
 
   try {
-    const jugRes = await fetch(
+    // Fetch jugadores, asistencia existente y novedades médicas activas en paralelo
+    const jugPromise = fetch(
       SUPA_URL + '/jugadores?select=id,nombre,apodo&order=nombre.asc',
       { headers: SUPA_HEADERS }
     );
-    if (!jugRes.ok) return { ok: false, error: 'Error cargando jugadores' };
-    const jugadores = await jugRes.json();
 
-    var attendanceMap = {};
+    var attPromise = Promise.resolve(null);
     if (fecha) {
-      const attRes = await fetch(
+      attPromise = fetch(
         SUPA_URL + '/asistencia?select=jugador_id,estado&fecha=eq.' + fecha,
         { headers: SUPA_HEADERS }
       );
-      if (attRes.ok) {
-        const att = await attRes.json();
-        att.forEach(function(a){ attendanceMap[a.jugador_id] = a.estado; });
-      }
+    }
+
+    // Novedades activas con fecha_alta definida (las sin fecha_alta no aplican)
+    const medPromise = fetch(
+      SUPA_URL + '/novedades_medicas?select=jugador_id,fecha_alta&estado=eq.Activa&fecha_alta=not.is.null',
+      { headers: SUPA_HEADERS }
+    );
+
+    const [jugRes, attRes, medRes] = await Promise.all([jugPromise, attPromise, medPromise]);
+
+    if (!jugRes.ok) return { ok: false, error: 'Error cargando jugadores' };
+    const jugadores = await jugRes.json();
+
+    // Mapa de asistencia ya guardada: jugador_id → estado
+    var attendanceMap = {};
+    if (attRes && attRes.ok) {
+      const att = await attRes.json();
+      att.forEach(function(a){ attendanceMap[a.jugador_id] = a.estado; });
+    }
+
+    // Set de jugadores con novedad activa cuya fecha_alta es POSTERIOR a la fecha de la clase
+    // → deben aparecer pre-cargados como "Ausente, aviso" si no tienen estado guardado
+    var medAusenteSet = new Set();
+    if (fecha && medRes && medRes.ok) {
+      const meds = await medRes.json();
+      meds.forEach(function(m) {
+        if (m.fecha_alta && m.fecha_alta > fecha) {
+          medAusenteSet.add(m.jugador_id);
+        }
+      });
     }
 
     const players = jugadores.map(function(j) {
-      return { row: j.id, name: j.nombre, apodo: j.apodo || '', novedad: '', status: attendanceMap[j.id] || null };
+      var status = attendanceMap[j.id] || null;
+      // Pre-cargar "Ausente, aviso" sólo si no hay estado guardado y tiene novedad médica activa vigente
+      if (!status && medAusenteSet.has(j.id)) {
+        status = 'Ausente, aviso';
+      }
+      return { row: j.id, name: j.nombre, apodo: j.apodo || '', novedad: '', status: status };
     });
 
     return { ok: true, players: players, sheetName: sheetName };
