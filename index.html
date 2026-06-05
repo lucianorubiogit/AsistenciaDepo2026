@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.26</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.27</div>
     </div>
   </div>
 </div>
@@ -875,7 +875,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.26 · Deportiva Francesa 1913
+      V 1.0.27 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -2823,7 +2823,7 @@ function copyAvailability() {
     return dates.some(d => att[id][d]);
   }
 
-  const usedIds = new Set();
+  const usedIds  = new Set();
   const assigned = [];
   POSITIONS.forEach(pos => {
     planState.playersPos.filter(r => r.primary_position === pos).forEach(r => {
@@ -2836,29 +2836,22 @@ function copyAvailability() {
 
   if (rows.length === 0) { showToast('Sin datos para copiar'); return; }
 
-  // Header
-  const satLabel = dates.length ? attDateHeader(dates[dates.length - 1]) : '';
-  const dateHeaders = dates.map(d => attDateHeader(d));
+  const satLabel     = dates.length ? attDateHeader(dates[dates.length - 1]) : '';
+  const dateHeaders  = dates.map(d => attDateHeader(d));
 
-  // Pad helper
-  function pad(str, len) {
-    while (str.length < len) str += ' ';
-    return str;
-  }
-
-  const COL = 6;
-  let lines = ['🏉 Disponibilidad M13' + (satLabel ? ' - ' + satLabel : ''),''];
-  lines.push('Jugador' + '          ' + dateHeaders.map(h => pad(h, COL)).join('  '));
+  // Opción C: negrita WhatsApp con pipe como separador
+  let lines = ['🏉 *Disponibilidad M13' + (satLabel ? ' - ' + satLabel : '') + '*', ''];
+  lines.push('*Jugador* | *' + dateHeaders.join('* | *') + '*');
   lines.push('─'.repeat(36));
 
   rows.forEach(r => {
-    const label = r.apodo ? '"' + r.apodo + '"' : r.name;
-    const playerAtt = att[r.id] || {};
-    const stateCols = dates.map(d => {
+    const label      = r.apodo ? '"' + r.apodo + '"' : r.name;
+    const playerAtt  = att[r.id] || {};
+    const stateCols  = dates.map(d => {
       const { text } = attLabel(playerAtt[d]);
-      return pad(text || '—', COL);
-    }).join('  ');
-    lines.push(pad(label, 16) + stateCols);
+      return text || '—';
+    }).join(' | ');
+    lines.push(label + ' | ' + stateCols);
   });
 
   const text = lines.join('\n');
