@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.29</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.30</div>
     </div>
   </div>
 </div>
@@ -773,8 +773,16 @@ textarea.med-form-input { font-family:inherit; }
         <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.45);
                     letter-spacing:2px;text-transform:uppercase;margin-bottom:3px">Deportiva Francesa</div>
         <div style="font-size:21px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1">Rugby Infantil ADF</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:3px">Categoría M13 · 2026</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:3px">Categoría <span id="home-division">M13</span> · 2026</div>
+        <div id="home-username" style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px"></div>
       </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <button onclick="doLogout()"
+          style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                 color:rgba(255,255,255,0.7);padding:5px 10px;border-radius:20px;
+                 font-size:11px;font-weight:600;cursor:pointer">
+          Salir
+        </button>
       <div style="width:54px;height:54px;background:rgba(255,255,255,0.12);
                   border-radius:14px;border:1px solid rgba(255,255,255,0.2);
                   display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
@@ -796,7 +804,7 @@ textarea.med-form-input { font-family:inherit; }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
 
       <!-- Asistencia -->
-      <div onclick="loadDatesScreen()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-asistencia" onclick="loadDatesScreen()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#002395;border-radius:0;
@@ -807,7 +815,7 @@ textarea.med-form-input { font-family:inherit; }
       </div>
 
       <!-- Planificación -->
-      <div onclick="enterPlanning()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-planificacion" onclick="enterPlanning()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#1a6e34;border-radius:0;
@@ -818,7 +826,7 @@ textarea.med-form-input { font-family:inherit; }
       </div>
 
       <!-- Fixture -->
-      <div onclick="enterFixture()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-fixture" onclick="enterFixture()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#5b21b6;border-radius:0;
@@ -829,7 +837,7 @@ textarea.med-form-input { font-family:inherit; }
       </div>
 
       <!-- Novedades -->
-      <div onclick="enterMedical()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-novedades" onclick="enterMedical()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#991b1b;border-radius:0;
@@ -840,7 +848,7 @@ textarea.med-form-input { font-family:inherit; }
       </div>
 
       <!-- Estadísticas -->
-      <div onclick="enterStats()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-stats" onclick="enterStats()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#92400e;border-radius:0;
@@ -851,7 +859,7 @@ textarea.med-form-input { font-family:inherit; }
       </div>
 
       <!-- Gira -->
-      <div onclick="enterGira()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-gira" onclick="enterGira()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#0c4a6e;border-radius:0;
@@ -862,7 +870,7 @@ textarea.med-form-input { font-family:inherit; }
       </div>
 
       <!-- ABM Jugadores -->
-      <div onclick="enterPlayers()" style="background:#fff;border-radius:18px;
+      <div id="home-mod-jugadores" onclick="enterPlayers()" style="background:#fff;border-radius:18px;
            padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
            position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
         <div style="height:3px;width:100%;background:#065f46;border-radius:0;
@@ -872,10 +880,21 @@ textarea.med-form-input { font-family:inherit; }
         <div style="font-size:10px;color:#94a3b8;margin-top:2px">Alta, baja y modificación</div>
       </div>
 
+      <!-- ABM Usuarios (solo Admin) -->
+      <div id="home-mod-usuarios" onclick="enterUsers()" style="background:#fff;border-radius:18px;
+           padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
+           position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;display:none">
+        <div style="height:3px;width:100%;background:#7c3aed;border-radius:0;
+                    position:absolute;top:0;left:0"></div>
+        <div style="margin-top:4px;margin-bottom:8px;font-size:20px">🔐</div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b">ABM Usuarios</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px">Gestión de accesos</div>
+      </div>
+
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.29 · Deportiva Francesa 1913
+      V 1.0.30 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1035,6 +1054,130 @@ textarea.med-form-input { font-family:inherit; }
   <!-- SECTION 3: Visualizar -->
   <div id="plan-view" class="plan-section" style="display:none;flex:1;overflow-y:auto;padding:10px">
     <div id="view-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ABM USUARIOS SCREEN
+     ═══════════════════════════════════════════════════ -->
+<div id="screen-users" class="screen">
+  <div class="header">
+    <div class="header-sub">Admin</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">ABM Usuarios</div>
+      <button onclick="showHomeScreen()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
+        ← Volver
+      </button>
+    </div>
+    <div class="header-meta" id="users-count"></div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:10px">
+    <button onclick="openUserModal(null)"
+      style="width:100%;padding:13px;background:#7c3aed;color:#fff;border:none;
+             border-radius:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">
+      + Agregar usuario
+    </button>
+    <div id="users-loading" class="loading"><div class="spinner"></div><span>Cargando usuarios…</span></div>
+    <div id="users-list" style="display:none"></div>
+  </div>
+</div>
+
+<!-- USER FORM MODAL -->
+<div class="modal-bg" id="user-modal" onclick="closeUserModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding-bottom:20px">
+    <div class="modal-handle"></div>
+    <div id="user-modal-title" style="font-size:16px;font-weight:700;color:#7c3aed;margin-bottom:16px"></div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="pm-label">Apellido</div>
+          <input id="uf-apellido" class="pm-input" type="text" placeholder="Apellido">
+        </div>
+        <div>
+          <div class="pm-label">Nombre</div>
+          <input id="uf-nombre" class="pm-input" type="text" placeholder="Nombre">
+        </div>
+      </div>
+
+      <div>
+        <div class="pm-label">Usuario (login)</div>
+        <input id="uf-usuario" class="pm-input" type="text" placeholder="usuario" autocapitalize="none">
+      </div>
+
+      <div>
+        <div class="pm-label" id="uf-pass-label">Contraseña</div>
+        <input id="uf-password" class="pm-input" type="password" placeholder="Contraseña">
+        <div id="uf-pass-hint" style="font-size:11px;color:#aaa;margin-top:3px;display:none">
+          Dejá vacío para no cambiar la contraseña
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="pm-label">División</div>
+          <select id="uf-division" class="pm-input">
+            <option value="">— Sin asignar —</option>
+            <option value="M5">M5</option><option value="M6">M6</option>
+            <option value="M7">M7</option><option value="M8">M8</option>
+            <option value="M9">M9</option><option value="M10">M10</option>
+            <option value="M11">M11</option><option value="M12">M12</option>
+            <option value="M13">M13</option><option value="M14">M14</option>
+            <option value="M15">M15</option><option value="M16">M16</option>
+            <option value="M17">M17</option><option value="M19">M19</option>
+            <option value="Plantel">Plantel</option>
+          </select>
+        </div>
+        <div>
+          <div class="pm-label">Rol</div>
+          <select id="uf-rol" class="pm-input">
+            <option value="Manager">Manager</option>
+            <option value="Lectura">Lectura</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="user-modal-error" style="color:#b71c1c;font-size:12px;margin-top:10px;display:none"></div>
+
+    <button id="user-save-btn" onclick="saveUser()"
+      style="width:100%;padding:13px;background:#7c3aed;color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:16px">
+      Guardar
+    </button>
+    <button onclick="closeUserModal()"
+      style="width:100%;padding:12px;background:transparent;color:#666;
+             border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer;margin-top:8px">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- USER DELETE CONFIRM MODAL -->
+<div class="modal-bg" id="user-delete-modal" onclick="closeUserDeleteModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:700;color:#b71c1c;margin-bottom:8px">Eliminar usuario</div>
+    <div id="user-delete-msg" style="font-size:14px;color:#444;margin-bottom:16px;line-height:1.5"></div>
+    <div style="background:#fff5f5;border:1px solid #ef9a9a;border-radius:10px;
+                padding:10px 12px;font-size:12px;color:#b71c1c;margin-bottom:16px">
+      ⚠️ Esta acción elimina el acceso del usuario al sistema. No se puede deshacer.
+    </div>
+    <button id="user-delete-confirm-btn" onclick="confirmDeleteUser()"
+      style="width:100%;padding:13px;background:#b71c1c;color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      Sí, eliminar
+    </button>
+    <button onclick="closeUserDeleteModal()"
+      style="width:100%;padding:12px;background:transparent;color:#666;
+             border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
+      Cancelar
+    </button>
   </div>
 </div>
 
@@ -1766,6 +1909,37 @@ let state = {
   selectedMonth:  null
 };
 
+// ── CURRENT USER SESSION ───────────────────────────────────
+const SHA256_SALT = 'LUCHO';
+
+let currentUser = null; // { id, usuario, nombre, apellido, division, rol }
+
+function saveSession(user) {
+  currentUser = user;
+  try { localStorage.setItem('adf_session', JSON.stringify(user)); } catch(e) {}
+}
+
+function clearSession() {
+  currentUser = null;
+  try { localStorage.removeItem('adf_session'); } catch(e) {}
+}
+
+function restoreSession() {
+  try {
+    const s = localStorage.getItem('adf_session');
+    if (s) { currentUser = JSON.parse(s); return true; }
+  } catch(e) {}
+  return false;
+}
+
+async function sha256(str) {
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function isAdmin()   { return currentUser && currentUser.rol === 'Admin'; }
+function isManager() { return currentUser && (currentUser.rol === 'Manager' || currentUser.rol === 'Lectura'); }
+
 const STATE_CLASS = {
   "Presente":           "s-presente",
   "Lesionado Presente": "s-lesionado",
@@ -1790,21 +1964,47 @@ async function doLogin() {
   if (!username || !password) { errEl.textContent = "Ingresá usuario y contraseña"; return; }
 
   try {
-    // Combined login + getDates in one call — saves one round trip
-    const data = await api({ action: "loginAndDates", username, password });
-    if (!data.ok) { errEl.textContent = data.error; return; }
-
-    state.username  = username;
-    state.password  = password;
-    state.division  = data.division;
-
-    // Pre-cache dates so Asistencia loads instantly
-    if (data.dates && data.dates.length > 0) {
-      state.dates     = data.dates;
-      state.sheetName = data.sheetName;
-      state._datesCached = true;
+    // 1) Fallback hardcodeado
+    const fallback = authUser(username, password);
+    if (fallback) {
+      saveSession({ id: null, usuario: username, nombre: 'Admin', apellido: '', division: fallback.division, rol: 'Admin' });
+      state.username = username;
+      state.password = password;
+      state.division = fallback.division;
+      const datesResult = await apiGetDates({});
+      if (datesResult.dates && datesResult.dates.length > 0) {
+        state.dates = datesResult.dates;
+        state.sheetName = datesResult.sheetName;
+        state._datesCached = true;
+      }
+      showHomeScreen();
+      return;
     }
 
+    // 2) Buscar en tabla usuarios con SHA-256
+    const hashed = await sha256(password + SHA256_SALT);
+    const res = await fetch(
+      SUPA_URL + '/usuarios?select=id,usuario,nombre,apellido,division,rol&usuario=eq.' + encodeURIComponent(username) + '&password=eq.' + hashed,
+      { headers: SUPA_HEADERS }
+    );
+    if (!res.ok) throw new Error('Error de conexión');
+    const rows = await res.json();
+    if (!rows || rows.length === 0) {
+      errEl.textContent = 'Usuario o contraseña incorrectos';
+      return;
+    }
+
+    const user = rows[0];
+    saveSession(user);
+    state.username = user.usuario;
+    state.division = user.division || 'M13';
+
+    const datesResult = await apiGetDates({});
+    if (datesResult.dates && datesResult.dates.length > 0) {
+      state.dates = datesResult.dates;
+      state.sheetName = datesResult.sheetName;
+      state._datesCached = true;
+    }
     showHomeScreen();
   } catch(e) {
     errEl.textContent = "Error de conexión. Revisá el link de la app.";
@@ -1828,7 +2028,41 @@ document.getElementById('login-pass').addEventListener('keydown', e => {
 // ── DATE PICKER ────────────────────────────────────────────
 function showHomeScreen() {
   showScreen('home');
-  document.getElementById('home-division').textContent = state.division || 'M13';
+  const div = currentUser ? currentUser.division : (state.division || 'M13');
+  const rol = currentUser ? currentUser.rol : 'Admin';
+  document.getElementById('home-division').textContent = div;
+
+  // Nombre del usuario logueado
+  const nombre = currentUser
+    ? ([currentUser.nombre, currentUser.apellido].filter(Boolean).join(' ') || currentUser.usuario)
+    : state.username;
+  const userEl = document.getElementById('home-username');
+  if (userEl) userEl.textContent = nombre + ' · ' + rol;
+
+  // Visibilidad de módulos según rol
+  const adminOnly = ['home-mod-fixture','home-mod-gira','home-mod-usuarios'];
+  const allMods   = ['home-mod-asistencia','home-mod-planificacion','home-mod-fixture',
+                     'home-mod-novedades','home-mod-stats','home-mod-gira',
+                     'home-mod-jugadores','home-mod-usuarios'];
+
+  allMods.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (adminOnly.includes(id)) {
+      el.style.display = isAdmin() ? '' : 'none';
+    } else {
+      el.style.display = '';
+    }
+  });
+}
+
+function doLogout() {
+  clearSession();
+  state.username = ''; state.password = ''; state.division = '';
+  state.dates = []; state._datesCached = false;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  showScreen('login');
 }
 
 async function loadDatesScreen(monthOverride) {
@@ -5295,6 +5529,207 @@ async function apiClearFixture(payload) {
   await supaDelete('fixture', 'id=gt.0');
   return { ok: true };
 }
+
+// ══════════════════════════════════════════════════════════
+// ABM USUARIOS (solo Admin)
+// ══════════════════════════════════════════════════════════
+let usersAbm = {
+  list:       [],
+  editingId:  null,
+  deletingId: null
+};
+
+async function enterUsers() {
+  if (!isAdmin()) { showToast('Acceso restringido'); return; }
+  showScreen('users');
+  document.getElementById('users-loading').style.display = 'flex';
+  document.getElementById('users-list').style.display    = 'none';
+  await refreshUsersList();
+}
+
+async function refreshUsersList() {
+  document.getElementById('users-loading').style.display = 'flex';
+  document.getElementById('users-list').style.display    = 'none';
+  try {
+    const res = await fetch(
+      SUPA_URL + '/usuarios?select=id,usuario,nombre,apellido,division,rol&order=apellido.asc,nombre.asc',
+      { headers: SUPA_HEADERS }
+    );
+    const rows = res.ok ? await res.json() : [];
+    usersAbm.list = rows;
+    renderUsersList(rows);
+  } catch(e) { renderUsersList([]); }
+}
+
+function renderUsersList(rows) {
+  document.getElementById('users-loading').style.display = 'none';
+  document.getElementById('users-count').textContent     = rows.length + ' usuarios';
+  const el = document.getElementById('users-list');
+  el.style.display = 'block';
+  if (rows.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-size:13px">Sin usuarios cargados</div>';
+    return;
+  }
+  el.innerHTML = rows.map(u => {
+    const displayName = [u.apellido, u.nombre].filter(Boolean).join(', ') || u.usuario;
+    const rolColor = u.rol === 'Admin' ? '#7c3aed' : u.rol === 'Manager' ? '#002395' : '#64748b';
+    return '<div class="player-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<div style="min-width:0">' +
+          '<div class="player-card-name">' + displayName + '</div>' +
+          '<div class="player-card-meta">' +
+            '<span style="color:' + rolColor + ';font-weight:700">' + u.rol + '</span>' +
+            (u.division ? ' · ' + u.division : '') +
+            ' · @' + u.usuario +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0">' +
+          '<button onclick="openUserModal(' + u.id + ')" ' +
+            'style="padding:6px 12px;background:#f5f0ff;border:1px solid #c4b5fd;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#7c3aed;cursor:pointer">Editar</button>' +
+          '<button onclick="openUserDeleteModal(' + u.id + ')" ' +
+            'style="padding:6px 10px;background:#fff5f5;border:1px solid #ef9a9a;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#b71c1c;cursor:pointer">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openUserModal(id) {
+  usersAbm.editingId = id;
+  document.getElementById('user-modal-error').style.display = 'none';
+  document.getElementById('user-save-btn').disabled    = false;
+  document.getElementById('user-save-btn').textContent = 'Guardar';
+
+  if (id === null) {
+    document.getElementById('user-modal-title').textContent = 'Nuevo usuario';
+    document.getElementById('uf-pass-label').textContent    = 'Contraseña';
+    document.getElementById('uf-pass-hint').style.display   = 'none';
+    ['apellido','nombre','usuario','password'].forEach(f =>
+      document.getElementById('uf-' + f).value = '');
+    document.getElementById('uf-division').value = '';
+    document.getElementById('uf-rol').value      = 'Manager';
+  } else {
+    const u = usersAbm.list.find(r => r.id === id);
+    if (!u) return;
+    document.getElementById('user-modal-title').textContent = 'Editar: ' + (u.nombre || u.usuario);
+    document.getElementById('uf-pass-label').textContent    = 'Nueva contraseña';
+    document.getElementById('uf-pass-hint').style.display   = 'block';
+    document.getElementById('uf-apellido').value  = u.apellido  || '';
+    document.getElementById('uf-nombre').value    = u.nombre    || '';
+    document.getElementById('uf-usuario').value   = u.usuario   || '';
+    document.getElementById('uf-password').value  = '';
+    document.getElementById('uf-division').value  = u.division  || '';
+    document.getElementById('uf-rol').value       = u.rol       || 'Manager';
+  }
+  document.getElementById('user-modal').classList.add('open');
+}
+
+function closeUserModal(e) {
+  if (e && e.target !== document.getElementById('user-modal')) return;
+  document.getElementById('user-modal').classList.remove('open');
+}
+
+async function saveUser() {
+  const btn   = document.getElementById('user-save-btn');
+  const errEl = document.getElementById('user-modal-error');
+  errEl.style.display = 'none';
+
+  const usuario  = document.getElementById('uf-usuario').value.trim().toLowerCase();
+  const nombre   = document.getElementById('uf-nombre').value.trim();
+  const apellido = document.getElementById('uf-apellido').value.trim();
+  const password = document.getElementById('uf-password').value.trim();
+  const division = document.getElementById('uf-division').value  || null;
+  const rol      = document.getElementById('uf-rol').value;
+
+  if (!usuario) { errEl.textContent = 'El usuario es obligatorio.'; errEl.style.display = 'block'; return; }
+  if (usersAbm.editingId === null && !password) {
+    errEl.textContent = 'La contraseña es obligatoria para un usuario nuevo.';
+    errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  try {
+    const payload = { usuario, nombre: nombre || null, apellido: apellido || null, division, rol };
+
+    if (password) {
+      payload.password = await sha256(password + SHA256_SALT);
+    }
+
+    if (usersAbm.editingId === null) {
+      const res = await fetch(SUPA_URL + '/usuarios', {
+        method: 'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Error al guardar');
+      }
+    } else {
+      const res = await fetch(SUPA_URL + '/usuarios?id=eq.' + usersAbm.editingId, {
+        method: 'PATCH',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al actualizar');
+    }
+
+    document.getElementById('user-modal').classList.remove('open');
+    showToast('✓ Usuario guardado');
+    await refreshUsersList();
+  } catch(e) {
+    errEl.textContent   = e.message || 'Error al guardar. Verificá la conexión.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Guardar';
+  }
+}
+
+function openUserDeleteModal(id) {
+  usersAbm.deletingId = id;
+  const u = usersAbm.list.find(r => r.id === id);
+  const name = u ? ([u.apellido, u.nombre].filter(Boolean).join(', ') || u.usuario) : 'este usuario';
+  document.getElementById('user-delete-msg').textContent =
+    '¿Confirmás que querés eliminar a ' + name + ' (@' + (u ? u.usuario : '') + ')?';
+  document.getElementById('user-delete-confirm-btn').disabled    = false;
+  document.getElementById('user-delete-confirm-btn').textContent = 'Sí, eliminar';
+  document.getElementById('user-delete-modal').classList.add('open');
+}
+
+function closeUserDeleteModal(e) {
+  if (e && e.target !== document.getElementById('user-delete-modal')) return;
+  document.getElementById('user-delete-modal').classList.remove('open');
+}
+
+async function confirmDeleteUser() {
+  const id  = usersAbm.deletingId;
+  if (!id) return;
+  const btn = document.getElementById('user-delete-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Eliminando…';
+  try {
+    await fetch(SUPA_URL + '/usuarios?id=eq.' + id, { method: 'DELETE', headers: SUPA_HEADERS });
+    document.getElementById('user-delete-modal').classList.remove('open');
+    showToast('✓ Usuario eliminado');
+    await refreshUsersList();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Sí, eliminar';
+    showToast('Error al eliminar. Verificá la conexión.');
+  }
+}
+
+// ── RESTAURAR SESIÓN AL CARGAR LA APP ─────────────────────
+(function initSession() {
+  if (restoreSession() && currentUser) {
+    state.username = currentUser.usuario;
+    state.division = currentUser.division || 'M13';
+    // Defer to after DOM is ready
+    window.addEventListener('DOMContentLoaded', () => showHomeScreen(), { once: true });
+    // If DOM already loaded
+    if (document.readyState !== 'loading') showHomeScreen();
+  }
+})();
 
 // ══════════════════════════════════════════════════════════
 // ABM JUGADORES
