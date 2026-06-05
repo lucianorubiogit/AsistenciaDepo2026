@@ -301,6 +301,31 @@
   font-size:11px; font-weight:700; flex-shrink:0;
 }
 .player-opt.used { opacity:0.4; pointer-events:none; }
+
+/* Attendance columns in pos modal */
+.att-modal-row {
+  display:flex; align-items:center;
+  padding:8px 10px; gap:0;
+}
+.att-modal-name-col {
+  flex:1; min-width:0;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:4px; padding-right:8px;
+}
+.att-modal-col {
+  width:42px; text-align:center; flex-shrink:0;
+  font-size:11px;
+}
+.att-modal-header {
+  display:flex; align-items:center;
+  padding:0 10px 4px 10px; gap:0;
+}
+.att-modal-header .att-modal-name-col {
+  flex:1; font-size:10px; color:#aaa;
+}
+.att-modal-header .att-modal-col {
+  font-size:10px; font-weight:700; color:#888;
+}
 .section-label {
   font-size:10px; font-weight:700; color:#aaa; letter-spacing:0.5px;
   margin-bottom:6px; padding-left:2px; text-transform:uppercase;
@@ -2144,12 +2169,14 @@ function posLabel(pos) {
 
 // ── STATE ──────────────────────────────────────────────────
 let planState = {
-  players:       [],   // loaded from server on entering planning
-  playersPos:    [],   // from localStorage players_positions
-  lineups:       [],   // from localStorage lineups
-  activeTeamIdx: 0,
-  activePosModal:  null, // current position being assigned
-  viewTeamIdx:     0
+  players:          [],   // loaded from server on entering planning
+  playersPos:       [],   // from localStorage players_positions
+  lineups:          [],   // from localStorage lineups
+  activeTeamIdx:    0,
+  activePosModal:   null, // current position being assigned
+  viewTeamIdx:      0,
+  recentAttendance: {},   // { jugador_id: { "YYYY-MM-DD": "Presente"|"Ausente"|... } }
+  recentDates:      []    // last 2 training dates (strings "YYYY-MM-DD"), excluding today
 };
 
 // ── HELPERS ────────────────────────────────────────────────
@@ -2275,7 +2302,10 @@ async function enterPlanning() {
 
   // 2+3) Always fetch fresh data and WAIT before rendering
   try {
-    const data = await api({ action: "planningInit" });
+    const [data] = await Promise.all([
+      api({ action: "planningInit" }),
+      loadRecentAttendance()
+    ]);
     if (data.ok) {
       if (data.players && data.players.length > 0) planState.players = data.players;
       planState.playersPos = data.playersPos || planState.playersPos;
@@ -2297,6 +2327,46 @@ async function enterPlanning() {
 
   initDefaultTeam();
   switchPlanTab('edit');
+}
+
+// ── RECENT ATTENDANCE FOR PLANNING MODAL ───────────────────
+async function loadRecentAttendance() {
+  try {
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    // 1) Get all distinct dates from asistencia, excluding today, sorted desc
+    const resD = await fetch(
+      SUPA_URL + '/asistencia?select=fecha&fecha=lt.' + today + '&order=fecha.desc',
+      { headers: SUPA_HEADERS }
+    );
+    if (!resD.ok) return;
+    const rowsD  = await resD.json();
+    const dateSet = [...new Set(rowsD.map(r => r.fecha))];
+    const last2   = dateSet.slice(0, 2); // already desc, so most recent first
+    if (last2.length === 0) return;
+
+    planState.recentDates = last2;
+
+    // 2) Fetch attendance records for those dates
+    const filter = last2.map(d => 'fecha=eq.' + d).join(',');
+    const resA = await fetch(
+      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&or=(' + filter + ')',
+      { headers: SUPA_HEADERS }
+    );
+    if (!resA.ok) return;
+    const rowsA = await resA.json();
+
+    // 3) Build lookup { jugador_id: { "YYYY-MM-DD": "estado" } }
+    const att = {};
+    rowsA.forEach(r => {
+      const id = String(r.jugador_id);
+      if (!att[id]) att[id] = {};
+      att[id][r.fecha] = r.estado;
+    });
+    planState.recentAttendance = att;
+  } catch(e) {
+    // Silently fail — attendance columns will be empty
+  }
 }
 
 // Ensure every player has a record in playersPos
@@ -2555,22 +2625,66 @@ function openPosModal(pos) {
   document.getElementById('pos-modal').classList.add('open');
 }
 
+function attLabel(estado) {
+  if (!estado) return { text: '', color: '#bbb' };
+  const e = estado.toLowerCase();
+  if (e.includes('lesionado') || e.includes('lesion')) return { text: 'LP',   color: '#e65100' };
+  if (e.includes('aviso'))                              return { text: 'AusA', color: '#1565c0' };
+  if (e.includes('ausente'))                            return { text: 'Aus',  color: '#b71c1c' };
+  if (e.includes('presente'))                          return { text: 'Pres', color: '#1a472a' };
+  return { text: '', color: '#bbb' };
+}
+
+function attDateHeader(dateStr) {
+  // "YYYY-MM-DD" → "Lun 2/6"
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const d = new Date(dateStr + 'T00:00:00');
+  return days[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
+}
+
 function renderModalGroup(containerId, label, records, usedIds, currentId) {
   const el = document.getElementById(containerId);
   if (records.length === 0) { el.innerHTML = ''; return; }
 
+  const dates    = planState.recentDates || [];   // up to 2 dates, desc order
+  const hasAtt   = dates.length > 0;
+
+  // Build header row if we have attendance dates
+  const headerRow = hasAtt
+    ? '<div class="att-modal-header">' +
+        '<div class="att-modal-name-col"></div>' +
+        dates.map(d =>
+          '<div class="att-modal-col">' + attDateHeader(d) + '</div>'
+        ).join('') +
+      '</div>'
+    : '';
+
   el.innerHTML = '<div class="section-label">' + label + '</div>' +
+    headerRow +
     records.map(r => {
-      const pl   = planState.players.find(p => String(p.row) === r.id);
       const init = (r.apodo || r.name || '').slice(0,2).toUpperCase();
       const used = usedIds.includes(r.id) && r.id !== currentId;
-      return '<div class="player-opt' + (used ? ' used' : '') + '" onclick="assignPlayer(\'' + r.id + '\')">' +
-        '<div class="pav">' + init + '</div>' +
-        '<div>' +
-          '<div style="font-size:14px;font-weight:600">' + (r.apodo ? '"' + r.apodo + '"' : r.name) + '</div>' +
-          '<div style="font-size:11px;color:#aaa">' + r.name + '</div>' +
+      const att  = planState.recentAttendance[r.id] || {};
+
+      const attCols = hasAtt
+        ? dates.map(d => {
+            const { text, color } = attLabel(att[d]);
+            return '<div class="att-modal-col" style="color:' + color + ';font-weight:600">' + text + '</div>';
+          }).join('')
+        : '';
+
+      return '<div class="player-opt att-modal-row' + (used ? ' used' : '') + '" onclick="assignPlayer(\'' + r.id + '\')">' +
+        '<div class="att-modal-name-col">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<div class="pav">' + init + '</div>' +
+            '<div>' +
+              '<div style="font-size:13px;font-weight:600">' + (r.apodo ? '"' + r.apodo + '"' : r.name) + '</div>' +
+              '<div style="font-size:10px;color:#aaa">' + r.name + '</div>' +
+            '</div>' +
+          '</div>' +
+          (used ? '<span style="font-size:10px;color:#b71c1c">en uso</span>' : '') +
         '</div>' +
-        (used ? '<span style="font-size:10px;color:#b71c1c;margin-left:auto">en uso</span>' : '') +
+        attCols +
       '</div>';
     }).join('');
 }
