@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.27</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.28</div>
     </div>
   </div>
 </div>
@@ -875,7 +875,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.27 · Deportiva Francesa 1913
+      V 1.0.28 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -2836,25 +2836,45 @@ function copyAvailability() {
 
   if (rows.length === 0) { showToast('Sin datos para copiar'); return; }
 
-  const satLabel     = dates.length ? attDateHeader(dates[dates.length - 1]) : '';
-  const dateHeaders  = dates.map(d => attDateHeader(d));
+  const satLabel    = dates.length ? attDateHeader(dates[dates.length - 1]) : '';
+  const dateHeaders = dates.map(d => attDateHeader(d)); // e.g. ["Lun 1/6","Jue 4/6","Sáb 6/6"]
 
-  // Opción C: negrita WhatsApp con pipe como separador
-  let lines = ['🏉 *Disponibilidad M13' + (satLabel ? ' - ' + satLabel : '') + '*', ''];
-  lines.push('*Jugador* | *' + dateHeaders.join('* | *') + '*');
-  lines.push('─'.repeat(36));
+  // Pad helper for monospaced alignment
+  function padR(str, len) {
+    str = String(str || '');
+    while (str.length < len) str += ' ';
+    return str.slice(0, len);
+  }
+
+  // Calculate column widths
+  const NAME_W = Math.max(12, ...rows.map(r => (r.apodo ? '"' + r.apodo + '"' : r.name).length)) + 1;
+  const COL_W  = 5; // "AusA " = 5
+
+  // Header row inside monospace block
+  const headerCols = dateHeaders.map(h => {
+    // Shorten: "Lun 1/6" → "L1/6", "Jue 4/6" → "J4/6", "Sáb 6/6" → "S6/6"
+    const short = h.charAt(0) + h.slice(h.indexOf(' ') + 1);
+    return padR(short, COL_W);
+  }).join(' ');
+  const separator = '-'.repeat(NAME_W + dateHeaders.length * (COL_W + 1));
+
+  let monoLines = [];
+  monoLines.push(padR('Jugador', NAME_W) + headerCols.trimEnd());
+  monoLines.push(separator);
 
   rows.forEach(r => {
-    const label      = r.apodo ? '"' + r.apodo + '"' : r.name;
-    const playerAtt  = att[r.id] || {};
-    const stateCols  = dates.map(d => {
+    const label     = r.apodo ? '"' + r.apodo + '"' : r.name;
+    const playerAtt = att[r.id] || {};
+    const stateCols = dates.map(d => {
       const { text } = attLabel(playerAtt[d]);
-      return text || '—';
-    }).join(' | ');
-    lines.push(label + ' | ' + stateCols);
+      return padR(text || '—', COL_W);
+    }).join(' ');
+    monoLines.push(padR(label, NAME_W) + stateCols.trimEnd());
   });
 
-  const text = lines.join('\n');
+  const text = '🏉 *Disponibilidad M13' + (satLabel ? ' - ' + satLabel : '') + '*\n\n' +
+               '```\n' + monoLines.join('\n') + '\n```';
+
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => showToast('✓ Copiado'));
   } else {
