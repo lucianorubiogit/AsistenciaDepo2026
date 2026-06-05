@@ -736,7 +736,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.25</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.26</div>
     </div>
   </div>
 </div>
@@ -845,7 +845,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.25 · Deportiva Francesa 1913
+      V 1.0.26 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1005,6 +1005,26 @@ textarea.med-form-input { font-family:inherit; }
   <!-- SECTION 3: Visualizar -->
   <div id="plan-view" class="plan-section" style="display:none;flex:1;overflow-y:auto;padding:10px">
     <div id="view-content"></div>
+  </div>
+</div>
+
+<!-- AVAILABILITY MODAL -->
+<div class="modal-bg" id="avail-modal" onclick="closeAvailabilityModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:700;color:#002395;margin-bottom:4px">Disponibilidad</div>
+    <div id="avail-modal-subtitle" style="font-size:12px;color:#aaa;margin-bottom:14px"></div>
+    <div id="avail-modal-content" style="margin-bottom:14px"></div>
+    <button onclick="copyAvailability()"
+      style="width:100%;padding:13px;background:#002395;color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      📋 Copiar para WhatsApp
+    </button>
+    <button onclick="closeAvailabilityModal()"
+      style="width:100%;padding:12px;background:transparent;color:#666;
+             border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
+      Cerrar
+    </button>
   </div>
 </div>
 
@@ -2509,7 +2529,8 @@ function renderTeamTabs() {
       t.team_name +
     '</button>'
   ).join('') +
-  '<button class="team-tab" onclick="addTeam()" style="border-style:dashed">+ Equipo</button>';
+  '<button class="team-tab" onclick="addTeam()" style="border-style:dashed">+ Equipo</button>' +
+  '<button class="team-tab" onclick="openAvailabilityModal()" style="margin-left:auto;background:#f0f2ff;border-color:#7b8fd4;color:#002395;white-space:nowrap">📋 Disponibilidad</button>';
 }
 
 function selectTeam(idx) {
@@ -2529,6 +2550,140 @@ function addTeam() {
   planState.activeTeamIdx = planState.lineups.length - 1;
   renderTeamTabs();
   renderField();
+}
+
+// ── AVAILABILITY MODAL ──────────────────────────────────────
+function openAvailabilityModal() {
+  const dates = planState.recentDates || [];
+  const att   = planState.recentAttendance || {};
+
+  // Build ordered player list by position number (1–15), then unassigned
+  // For each position in order, find all players with that as primary position
+  const assigned = []; // { num, posName, playerId, apodo, name }
+  const usedIds  = new Set();
+
+  POSITIONS.forEach(pos => {
+    const num = POS_NUMBERS[pos];
+    const playersForPos = planState.playersPos.filter(r => r.primary_position === pos);
+    playersForPos.forEach(r => {
+      assigned.push({ num, posName: posLabel(pos), id: r.id, apodo: r.apodo, name: r.name });
+      usedIds.add(r.id);
+    });
+  });
+
+  // Players with no primary position assigned go at the end
+  const unassigned = planState.playersPos.filter(r => !usedIds.has(r.id));
+
+  // Filter: only players with at least one attendance record across the 3 dates
+  function hasAnyAtt(id) {
+    if (!att[id]) return false;
+    return dates.some(d => att[id][d]);
+  }
+
+  const rows = [
+    ...assigned.filter(r => hasAnyAtt(r.id)),
+    ...unassigned.filter(r => hasAnyAtt(r.id)).map(r => ({ num: '—', posName: 'Sin posición', id: r.id, apodo: r.apodo, name: r.name }))
+  ];
+
+  // Build subtitle with date headers
+  const dateHeaders = dates.map(d => attDateHeader(d));
+  document.getElementById('avail-modal-subtitle').textContent =
+    dates.length ? dateHeaders.join('  ·  ') : 'Sin datos de asistencia';
+
+  if (rows.length === 0) {
+    document.getElementById('avail-modal-content').innerHTML =
+      '<div style="text-align:center;color:#aaa;padding:20px;font-size:13px">Sin registros de asistencia para mostrar</div>';
+  } else {
+    // Header row
+    const colW = 'width:38px;text-align:center;flex-shrink:0;font-size:10px;font-weight:700;color:#888';
+    const nameW = 'flex:1;font-size:10px;font-weight:700;color:#888';
+    let html = '<div style="display:flex;padding:0 4px 6px 4px;border-bottom:1px solid #eee;margin-bottom:4px">' +
+      '<div style="' + nameW + '">Jugador</div>' +
+      dates.map(d => '<div style="' + colW + '">' + attDateHeader(d) + '</div>').join('') +
+      '</div>';
+
+    rows.forEach(r => {
+      const playerAtt = att[r.id] || {};
+      const cols = dates.map(d => {
+        const { text, color } = attLabel(playerAtt[d]);
+        return '<div style="width:38px;text-align:center;flex-shrink:0;font-size:11px;font-weight:600;color:' + color + '">' + text + '</div>';
+      }).join('');
+      const label = r.apodo ? '"' + r.apodo + '"' : r.name;
+      html += '<div style="display:flex;align-items:center;padding:7px 4px;border-bottom:1px solid #f5f5f5">' +
+        '<div style="flex:1;font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + label + '</div>' +
+        cols +
+        '</div>';
+    });
+
+    document.getElementById('avail-modal-content').innerHTML = html;
+  }
+
+  document.getElementById('avail-modal').classList.add('open');
+}
+
+function closeAvailabilityModal(e) {
+  if (e && e.target !== document.getElementById('avail-modal')) return;
+  document.getElementById('avail-modal').classList.remove('open');
+}
+
+function copyAvailability() {
+  const dates = planState.recentDates || [];
+  const att   = planState.recentAttendance || {};
+
+  function hasAnyAtt(id) {
+    if (!att[id]) return false;
+    return dates.some(d => att[id][d]);
+  }
+
+  const usedIds = new Set();
+  const assigned = [];
+  POSITIONS.forEach(pos => {
+    planState.playersPos.filter(r => r.primary_position === pos).forEach(r => {
+      assigned.push(r);
+      usedIds.add(r.id);
+    });
+  });
+  const unassigned = planState.playersPos.filter(r => !usedIds.has(r.id));
+  const rows = [...assigned, ...unassigned].filter(r => hasAnyAtt(r.id));
+
+  if (rows.length === 0) { showToast('Sin datos para copiar'); return; }
+
+  // Header
+  const satLabel = dates.length ? attDateHeader(dates[dates.length - 1]) : '';
+  const dateHeaders = dates.map(d => attDateHeader(d));
+
+  // Pad helper
+  function pad(str, len) {
+    while (str.length < len) str += ' ';
+    return str;
+  }
+
+  const COL = 6;
+  let lines = ['🏉 Disponibilidad M13' + (satLabel ? ' - ' + satLabel : ''),''];
+  lines.push('Jugador' + '          ' + dateHeaders.map(h => pad(h, COL)).join('  '));
+  lines.push('─'.repeat(36));
+
+  rows.forEach(r => {
+    const label = r.apodo ? '"' + r.apodo + '"' : r.name;
+    const playerAtt = att[r.id] || {};
+    const stateCols = dates.map(d => {
+      const { text } = attLabel(playerAtt[d]);
+      return pad(text || '—', COL);
+    }).join('  ');
+    lines.push(pad(label, 16) + stateCols);
+  });
+
+  const text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('✓ Copiado'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✓ Copiado');
+  }
 }
 
 function renderField() {
