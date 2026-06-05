@@ -313,7 +313,7 @@
   gap:4px; padding-right:8px;
 }
 .att-modal-col {
-  width:42px; text-align:center; flex-shrink:0;
+  width:38px; text-align:center; flex-shrink:0;
   font-size:11px;
 }
 .att-modal-header {
@@ -2332,9 +2332,18 @@ async function enterPlanning() {
 // ── RECENT ATTENDANCE FOR PLANNING MODAL ───────────────────
 async function loadRecentAttendance() {
   try {
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const now   = new Date();
+    const today = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
-    // 1) Get all distinct dates from asistencia, excluding today, sorted desc
+    // Calculate the upcoming saturday (or today if today IS saturday)
+    // getDay(): 0=Sun, 1=Mon, ..., 6=Sat
+    const dayOfWeek  = now.getDay();
+    const daysToSat  = dayOfWeek === 6 ? 0 : (6 - dayOfWeek);
+    const satDate    = new Date(now);
+    satDate.setDate(now.getDate() + daysToSat);
+    const satStr     = satDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    // 1) Get last 2 training dates strictly before today, sorted desc
     const resD = await fetch(
       SUPA_URL + '/asistencia?select=fecha&fecha=lt.' + today + '&order=fecha.desc',
       { headers: SUPA_HEADERS }
@@ -2342,13 +2351,15 @@ async function loadRecentAttendance() {
     if (!resD.ok) return;
     const rowsD  = await resD.json();
     const dateSet = [...new Set(rowsD.map(r => r.fecha))];
-    const last2   = dateSet.slice(0, 2); // already desc, so most recent first
-    if (last2.length === 0) return;
+    const last2   = dateSet.slice(0, 2); // most recent first
 
-    planState.recentDates = last2;
+    // 3 columns total: last 2 training dates + saturday
+    // recentDates order: [oldest training, newest training, saturday]
+    planState.recentDates = [...last2.slice().reverse(), satStr];
 
-    // 2) Fetch attendance records for those dates using PostgREST "in" operator
-    const inFilter = last2.join(',');
+    // 2) Fetch attendance for all 3 dates
+    const allDates  = [...new Set([...last2, satStr])];
+    const inFilter  = allDates.join(',');
     const resA = await fetch(
       SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=in.(' + inFilter + ')',
       { headers: SUPA_HEADERS }
