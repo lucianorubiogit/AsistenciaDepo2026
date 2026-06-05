@@ -2347,10 +2347,10 @@ async function loadRecentAttendance() {
 
     planState.recentDates = last2;
 
-    // 2) Fetch attendance records for those dates
-    const filter = last2.map(d => 'fecha=eq.' + d).join(',');
+    // 2) Fetch attendance records for those dates using PostgREST "in" operator
+    const inFilter = last2.join(',');
     const resA = await fetch(
-      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&or=(' + filter + ')',
+      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=in.(' + inFilter + ')',
       { headers: SUPA_HEADERS }
     );
     if (!resA.ok) return;
@@ -2365,6 +2365,7 @@ async function loadRecentAttendance() {
     });
     planState.recentAttendance = att;
   } catch(e) {
+    console.error('loadRecentAttendance error:', e);
     // Silently fail — attendance columns will be empty
   }
 }
