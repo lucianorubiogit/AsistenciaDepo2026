@@ -302,6 +302,25 @@
 }
 .player-opt.used { opacity:0.4; pointer-events:none; }
 
+/* Player form modal */
+.pm-label {
+  font-size:11px;font-weight:700;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px;
+}
+.pm-input {
+  width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;
+  font-size:14px;color:#333;background:#fff;outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+.pm-input:focus { border-color:#002395; }
+
+/* Player list card */
+.player-card {
+  background:#fff;border-radius:13px;border:1px solid #e2e8f0;
+  padding:12px 14px;margin-bottom:8px;
+}
+.player-card-name { font-size:15px;font-weight:700;color:#1e293b; }
+.player-card-meta { font-size:11px;color:#94a3b8;margin-top:2px; }
+
 /* Attendance columns in pos modal */
 .att-modal-row {
   display:flex; align-items:center;
@@ -842,6 +861,17 @@ textarea.med-form-input { font-family:inherit; }
         <div style="font-size:10px;color:#94a3b8;margin-top:2px">Inscriptos y gastos</div>
       </div>
 
+      <!-- ABM Jugadores -->
+      <div onclick="enterPlayers()" style="background:#fff;border-radius:18px;
+           padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
+           position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
+        <div style="height:3px;width:100%;background:#065f46;border-radius:0;
+                    position:absolute;top:0;left:0"></div>
+        <div style="margin-top:4px;margin-bottom:8px;font-size:20px">👤</div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b">ABM Jugadores</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px">Alta, baja y modificación</div>
+      </div>
+
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
@@ -1024,6 +1054,164 @@ textarea.med-form-input { font-family:inherit; }
       style="width:100%;padding:12px;background:transparent;color:#666;
              border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
       Cerrar
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ABM JUGADORES SCREEN
+     ═══════════════════════════════════════════════════ -->
+<div id="screen-players" class="screen">
+  <div class="header">
+    <div class="header-sub">M13</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">ABM Jugadores</div>
+      <button onclick="showHomeScreen()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
+        ← Volver
+      </button>
+    </div>
+    <div class="header-meta" id="players-count"></div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:10px">
+    <!-- Botón agregar -->
+    <button onclick="openPlayerModal(null)"
+      style="width:100%;padding:13px;background:#065f46;color:#fff;border:none;
+             border-radius:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">
+      + Agregar jugador
+    </button>
+    <!-- Loading -->
+    <div id="players-loading" class="loading"><div class="spinner"></div><span>Cargando jugadores…</span></div>
+    <!-- Lista -->
+    <div id="players-list" style="display:none"></div>
+  </div>
+</div>
+
+<!-- PLAYER FORM MODAL -->
+<div class="modal-bg" id="player-modal" onclick="closePlayerModal(event)">
+  <div class="modal" onclick="event.stopPropagation()"
+       style="max-height:90vh;overflow-y:auto;padding-bottom:20px">
+    <div class="modal-handle"></div>
+    <div id="player-modal-title"
+         style="font-size:16px;font-weight:700;color:#002395;margin-bottom:16px"></div>
+
+    <!-- Campos del formulario -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="pm-label">Apellido</div>
+          <input id="pf-apellido" class="pm-input" type="text" placeholder="Apellido">
+        </div>
+        <div>
+          <div class="pm-label">Nombre</div>
+          <input id="pf-nombre" class="pm-input" type="text" placeholder="Nombre">
+        </div>
+      </div>
+
+      <div>
+        <div class="pm-label">Apodo</div>
+        <input id="pf-apodo" class="pm-input" type="text" placeholder="Apodo (opcional)">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="pm-label">Documento</div>
+          <input id="pf-documento" class="pm-input" type="text" placeholder="DNI / Pasaporte">
+        </div>
+        <div>
+          <div class="pm-label">Fecha de Nac.</div>
+          <input id="pf-fecha-nac" class="pm-input" type="date">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="pm-label">Categoría</div>
+          <select id="pf-categoria" class="pm-input">
+            <option value="">— Sin asignar —</option>
+            <option value="Infantil">Infantil</option>
+            <option value="Menor">Menor</option>
+            <option value="Mayor">Mayor</option>
+            <option value="Referee">Referee</option>
+            <option value="Mix">Mix</option>
+          </select>
+        </div>
+        <div>
+          <div class="pm-label">Sexo</div>
+          <select id="pf-sexo" class="pm-input">
+            <option value="">— Sin asignar —</option>
+            <option value="M">M</option>
+            <option value="F">F</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div class="pm-label">Obra Social</div>
+        <input id="pf-obra-social" class="pm-input" type="text" placeholder="Obra social">
+      </div>
+
+      <div>
+        <div class="pm-label">Email</div>
+        <input id="pf-email" class="pm-input" type="email" placeholder="email@ejemplo.com">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="pm-label">Posición principal</div>
+          <select id="pf-pos-primary" class="pm-input">
+            <option value="">— Sin asignar —</option>
+          </select>
+        </div>
+        <div>
+          <div class="pm-label">Posición alternativa</div>
+          <select id="pf-pos-secondary" class="pm-input">
+            <option value="">— Sin asignar —</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="player-modal-error"
+         style="color:#b71c1c;font-size:12px;margin-top:10px;display:none"></div>
+
+    <button id="player-save-btn" onclick="savePlayer()"
+      style="width:100%;padding:13px;background:#002395;color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:16px">
+      Guardar
+    </button>
+    <button onclick="closePlayerModal()"
+      style="width:100%;padding:12px;background:transparent;color:#666;
+             border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer;margin-top:8px">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- PLAYER DELETE CONFIRM MODAL -->
+<div class="modal-bg" id="player-delete-modal" onclick="closeDeleteModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:700;color:#b71c1c;margin-bottom:8px">Eliminar jugador</div>
+    <div id="player-delete-msg"
+         style="font-size:14px;color:#444;margin-bottom:16px;line-height:1.5"></div>
+    <div style="background:#fff5f5;border:1px solid #ef9a9a;border-radius:10px;
+                padding:10px 12px;font-size:12px;color:#b71c1c;margin-bottom:16px">
+      ⚠️ Esta acción eliminará también toda la asistencia, posiciones, novedades médicas y datos de gira del jugador. No se puede deshacer.
+    </div>
+    <button id="player-delete-confirm-btn" onclick="confirmDeletePlayer()"
+      style="width:100%;padding:13px;background:#b71c1c;color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px">
+      Sí, eliminar
+    </button>
+    <button onclick="closeDeleteModal()"
+      style="width:100%;padding:12px;background:transparent;color:#666;
+             border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
+      Cancelar
     </button>
   </div>
 </div>
@@ -5068,6 +5256,262 @@ async function apiSaveFixture(payload) {
 async function apiClearFixture(payload) {
   await supaDelete('fixture', 'id=gt.0');
   return { ok: true };
+}
+
+// ══════════════════════════════════════════════════════════
+// ABM JUGADORES
+// ══════════════════════════════════════════════════════════
+let playersAbm = {
+  list:          [],   // full player list from Supabase
+  editingId:     null, // id being edited, null = new
+  deletingId:    null, // id pending delete confirmation
+  positionsData: []    // posiciones from Supabase for the editing player
+};
+
+async function enterPlayers() {
+  showScreen('screen-players');
+  document.getElementById('players-loading').style.display = 'flex';
+  document.getElementById('players-list').style.display    = 'none';
+  await refreshPlayersList();
+}
+
+async function refreshPlayersList() {
+  document.getElementById('players-loading').style.display = 'flex';
+  document.getElementById('players-list').style.display    = 'none';
+  try {
+    const res = await fetch(
+      SUPA_URL + '/jugadores?select=id,nombre,apodo,apellido,documento,fecha_nac,categoria,sexo,obra_social,email&order=apellido.asc,nombre.asc',
+      { headers: SUPA_HEADERS }
+    );
+    const rows = res.ok ? await res.json() : [];
+    playersAbm.list = rows;
+    renderPlayersList(rows);
+  } catch(e) {
+    renderPlayersList([]);
+  }
+}
+
+function renderPlayersList(rows) {
+  document.getElementById('players-loading').style.display = 'none';
+  document.getElementById('players-count').textContent     = rows.length + ' jugadores';
+  const el = document.getElementById('players-list');
+  el.style.display = 'block';
+  if (rows.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-size:13px">Sin jugadores cargados</div>';
+    return;
+  }
+  el.innerHTML = rows.map(p => {
+    const displayName = [p.apellido, p.nombre].filter(Boolean).join(', ') || p.nombre || '(Sin nombre)';
+    const apodo       = p.apodo ? '"' + p.apodo + '"' : '';
+    const meta        = [p.categoria, p.sexo, p.documento].filter(Boolean).join(' · ');
+    return '<div class="player-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<div style="min-width:0">' +
+          '<div class="player-card-name">' + displayName + (apodo ? ' <span style="font-weight:400;color:#64748b">' + apodo + '</span>' : '') + '</div>' +
+          (meta ? '<div class="player-card-meta">' + meta + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0">' +
+          '<button onclick="openPlayerModal(' + p.id + ')" ' +
+            'style="padding:6px 12px;background:#f0f2ff;border:1px solid #7b8fd4;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#002395;cursor:pointer">Editar</button>' +
+          '<button onclick="openDeleteModal(' + p.id + ')" ' +
+            'style="padding:6px 10px;background:#fff5f5;border:1px solid #ef9a9a;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#b71c1c;cursor:pointer">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function openPlayerModal(id) {
+  playersAbm.editingId = id;
+  document.getElementById('player-modal-error').style.display = 'none';
+  document.getElementById('player-save-btn').disabled = false;
+  document.getElementById('player-save-btn').textContent = 'Guardar';
+
+  // Populate position selects
+  const posOpts = '<option value="">— Sin asignar —</option>' +
+    POSITIONS.map(p => '<option value="' + p + '">' + POS_NUMBERS[p] + ' - ' + posLabel(p) + '</option>').join('');
+  document.getElementById('pf-pos-primary').innerHTML   = posOpts;
+  document.getElementById('pf-pos-secondary').innerHTML = posOpts;
+
+  if (id === null) {
+    // New player — clear form
+    document.getElementById('player-modal-title').textContent = 'Nuevo jugador';
+    ['apellido','nombre','apodo','documento','obra-social','email'].forEach(f =>
+      document.getElementById('pf-' + f).value = '');
+    document.getElementById('pf-fecha-nac').value    = '';
+    document.getElementById('pf-categoria').value    = '';
+    document.getElementById('pf-sexo').value         = '';
+    document.getElementById('pf-pos-primary').value   = '';
+    document.getElementById('pf-pos-secondary').value = '';
+  } else {
+    // Edit — fill form with existing data
+    const p = playersAbm.list.find(r => r.id === id);
+    if (!p) return;
+    document.getElementById('player-modal-title').textContent =
+      'Editar: ' + ([p.apellido, p.nombre].filter(Boolean).join(', ') || p.nombre || '');
+    document.getElementById('pf-apellido').value    = p.apellido    || '';
+    document.getElementById('pf-nombre').value      = p.nombre      || '';
+    document.getElementById('pf-apodo').value       = p.apodo       || '';
+    document.getElementById('pf-documento').value   = p.documento   || '';
+    document.getElementById('pf-fecha-nac').value   = p.fecha_nac   || '';
+    document.getElementById('pf-categoria').value   = p.categoria   || '';
+    document.getElementById('pf-sexo').value        = p.sexo        || '';
+    document.getElementById('pf-obra-social').value = p.obra_social || '';
+    document.getElementById('pf-email').value       = p.email       || '';
+
+    // Load position data
+    try {
+      const res = await fetch(
+        SUPA_URL + '/posiciones?select=posicion_principal,posicion_alternativa&jugador_id=eq.' + id,
+        { headers: SUPA_HEADERS }
+      );
+      const rows = res.ok ? await res.json() : [];
+      const pos  = rows[0] || {};
+      document.getElementById('pf-pos-primary').value   = pos.posicion_principal  || '';
+      document.getElementById('pf-pos-secondary').value = pos.posicion_alternativa || '';
+    } catch(e) {}
+  }
+
+  document.getElementById('player-modal').classList.add('open');
+}
+
+function closePlayerModal(e) {
+  if (e && e.target !== document.getElementById('player-modal')) return;
+  document.getElementById('player-modal').classList.remove('open');
+}
+
+async function savePlayer() {
+  const btn = document.getElementById('player-save-btn');
+  const errEl = document.getElementById('player-modal-error');
+  errEl.style.display = 'none';
+
+  const nombre    = document.getElementById('pf-nombre').value.trim();
+  const apellido  = document.getElementById('pf-apellido').value.trim();
+
+  if (!nombre && !apellido) {
+    errEl.textContent    = 'El nombre o apellido es obligatorio.';
+    errEl.style.display  = 'block';
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = 'Guardando…';
+
+  const payload = {
+    nombre:      nombre,
+    apellido:    apellido  || null,
+    apodo:       document.getElementById('pf-apodo').value.trim()       || null,
+    documento:   document.getElementById('pf-documento').value.trim()   || null,
+    fecha_nac:   document.getElementById('pf-fecha-nac').value          || null,
+    categoria:   document.getElementById('pf-categoria').value          || null,
+    sexo:        document.getElementById('pf-sexo').value               || null,
+    obra_social: document.getElementById('pf-obra-social').value.trim() || null,
+    email:       document.getElementById('pf-email').value.trim()       || null,
+  };
+
+  const posPrimary   = document.getElementById('pf-pos-primary').value   || null;
+  const posSecondary = document.getElementById('pf-pos-secondary').value || null;
+
+  try {
+    let jugadorId = playersAbm.editingId;
+
+    if (jugadorId === null) {
+      // INSERT
+      const res = await fetch(SUPA_URL + '/jugadores', {
+        method: 'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      const rows = await res.json();
+      jugadorId = rows[0].id;
+    } else {
+      // UPDATE
+      const res = await fetch(SUPA_URL + '/jugadores?id=eq.' + jugadorId, {
+        method: 'PATCH',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al actualizar');
+    }
+
+    // Upsert posiciones
+    const posRow = {
+      jugador_id:            jugadorId,
+      posicion_principal:    posPrimary,
+      posicion_alternativa:  posSecondary
+    };
+    await fetch(SUPA_URL + '/posiciones?jugador_id=eq.' + jugadorId, {
+      method: 'DELETE', headers: SUPA_HEADERS
+    });
+    if (posPrimary || posSecondary) {
+      await fetch(SUPA_URL + '/posiciones', {
+        method: 'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(posRow)
+      });
+    }
+
+    document.getElementById('player-modal').classList.remove('open');
+    showToast('✓ Jugador guardado');
+    await refreshPlayersList();
+  } catch(e) {
+    errEl.textContent   = 'Error al guardar. Verificá la conexión.';
+    errEl.style.display = 'block';
+    btn.disabled        = false;
+    btn.textContent     = 'Guardar';
+  }
+}
+
+function openDeleteModal(id) {
+  playersAbm.deletingId = id;
+  const p = playersAbm.list.find(r => r.id === id);
+  const displayName = p
+    ? ([p.apellido, p.nombre].filter(Boolean).join(', ') || p.nombre || 'este jugador')
+    : 'este jugador';
+  const apodo = p && p.apodo ? ' ("' + p.apodo + '")' : '';
+  document.getElementById('player-delete-msg').textContent =
+    '¿Confirmás que querés eliminar a ' + displayName + apodo + '?';
+  document.getElementById('player-delete-confirm-btn').disabled    = false;
+  document.getElementById('player-delete-confirm-btn').textContent = 'Sí, eliminar';
+  document.getElementById('player-delete-modal').classList.add('open');
+}
+
+function closeDeleteModal(e) {
+  if (e && e.target !== document.getElementById('player-delete-modal')) return;
+  document.getElementById('player-delete-modal').classList.remove('open');
+}
+
+async function confirmDeletePlayer() {
+  const id  = playersAbm.deletingId;
+  if (!id) return;
+  const btn = document.getElementById('player-delete-confirm-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Eliminando…';
+
+  try {
+    // Cascade deletes in order (child tables first)
+    const tables = [
+      'equipo_posiciones?jugador_id=eq.' + id,
+      'posiciones?jugador_id=eq.'        + id,
+      'asistencia?jugador_id=eq.'        + id,
+      'novedades_medicas?jugador_id=eq.' + id,
+      'gira_inscriptos?jugador_id=eq.'   + id,
+      'jugadores?id=eq.'                 + id
+    ];
+    for (const t of tables) {
+      await fetch(SUPA_URL + '/' + t, { method: 'DELETE', headers: SUPA_HEADERS });
+    }
+    document.getElementById('player-delete-modal').classList.remove('open');
+    showToast('✓ Jugador eliminado');
+    await refreshPlayersList();
+  } catch(e) {
+    btn.disabled    = false;
+    btn.textContent = 'Sí, eliminar';
+    showToast('Error al eliminar. Verificá la conexión.');
+  }
 }
 
 </script>
