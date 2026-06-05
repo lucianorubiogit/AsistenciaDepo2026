@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.28</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.29</div>
     </div>
   </div>
 </div>
@@ -875,7 +875,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.28 · Deportiva Francesa 1913
+      V 1.0.29 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1140,6 +1140,30 @@ textarea.med-form-input { font-family:inherit; }
           </select>
         </div>
         <div>
+          <div class="pm-label">División</div>
+          <select id="pf-division" class="pm-input">
+            <option value="">— Sin asignar —</option>
+            <option value="M5">M5</option>
+            <option value="M6">M6</option>
+            <option value="M7">M7</option>
+            <option value="M8">M8</option>
+            <option value="M9">M9</option>
+            <option value="M10">M10</option>
+            <option value="M11">M11</option>
+            <option value="M12">M12</option>
+            <option value="M13">M13</option>
+            <option value="M14">M14</option>
+            <option value="M15">M15</option>
+            <option value="M16">M16</option>
+            <option value="M17">M17</option>
+            <option value="M19">M19</option>
+            <option value="Plantel">Plantel</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
           <div class="pm-label">Sexo</div>
           <select id="pf-sexo" class="pm-input">
             <option value="">— Sin asignar —</option>
@@ -1147,6 +1171,7 @@ textarea.med-form-input { font-family:inherit; }
             <option value="F">F</option>
           </select>
         </div>
+        <div></div>
       </div>
 
       <div>
@@ -5293,7 +5318,7 @@ async function refreshPlayersList() {
   document.getElementById('players-list').style.display    = 'none';
   try {
     const res = await fetch(
-      SUPA_URL + '/jugadores?select=id,nombre,apodo,apellido,documento,fecha_nac,categoria,sexo,obra_social,email&order=apellido.asc,nombre.asc',
+      SUPA_URL + '/jugadores?select=id,nombre,apodo,apellido,documento,fecha_nac,categoria,division,sexo,obra_social,email&order=apellido.asc,nombre.asc',
       { headers: SUPA_HEADERS }
     );
     const rows = res.ok ? await res.json() : [];
@@ -5355,6 +5380,7 @@ async function openPlayerModal(id) {
       document.getElementById('pf-' + f).value = '');
     document.getElementById('pf-fecha-nac').value    = '';
     document.getElementById('pf-categoria').value    = '';
+    document.getElementById('pf-division').value     = '';
     document.getElementById('pf-sexo').value         = '';
     document.getElementById('pf-pos-primary').value   = '';
     document.getElementById('pf-pos-secondary').value = '';
@@ -5370,6 +5396,7 @@ async function openPlayerModal(id) {
     document.getElementById('pf-documento').value   = p.documento   || '';
     document.getElementById('pf-fecha-nac').value   = p.fecha_nac   || '';
     document.getElementById('pf-categoria').value   = p.categoria   || '';
+    document.getElementById('pf-division').value    = p.division    || '';
     document.getElementById('pf-sexo').value        = p.sexo        || '';
     document.getElementById('pf-obra-social').value = p.obra_social || '';
     document.getElementById('pf-email').value       = p.email       || '';
@@ -5419,6 +5446,7 @@ async function savePlayer() {
     documento:   document.getElementById('pf-documento').value.trim()   || null,
     fecha_nac:   document.getElementById('pf-fecha-nac').value          || null,
     categoria:   document.getElementById('pf-categoria').value          || null,
+    division:    document.getElementById('pf-division').value           || null,
     sexo:        document.getElementById('pf-sexo').value               || null,
     obra_social: document.getElementById('pf-obra-social').value.trim() || null,
     email:       document.getElementById('pf-email').value.trim()       || null,
