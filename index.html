@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.35</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.36</div>
     </div>
   </div>
 </div>
@@ -892,10 +892,21 @@ textarea.med-form-input { font-family:inherit; }
         <div style="font-size:10px;color:#94a3b8;margin-top:2px">Gestión de accesos</div>
       </div>
 
+      <!-- TEP y Desarrollo -->
+      <div id="home-mod-desarrollo" onclick="enterDesarrollo()" style="background:#fff;border-radius:18px;
+           padding:16px 14px 14px;border:1px solid #e2e8f0;cursor:pointer;
+           position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent">
+        <div style="height:3px;width:100%;background:#0891b2;border-radius:0;
+                    position:absolute;top:0;left:0"></div>
+        <div style="margin-top:4px;margin-bottom:8px;font-size:20px">🚀</div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b">TEP y Desarrollo</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px">Participación y evaluación</div>
+      </div>
+
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.35 · Deportiva Francesa 1913
+      V 1.0.36 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1954,6 +1965,196 @@ textarea.med-form-input { font-family:inherit; }
 
 <div class="toast" id="toast"></div>
 
+<!-- ═══════════════════════════════════════════════════════
+     TEP Y DESARROLLO SCREEN
+     ═══════════════════════════════════════════════════════ -->
+<div id="screen-desarrollo" class="screen">
+  <div class="header">
+    <div class="header-sub" id="des-division">M13</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="header-title">🚀 TEP y Desarrollo</div>
+      <button onclick="showHomeScreen()"
+        style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+               padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">
+        ← Volver
+      </button>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <button id="des-tab-tep"  onclick="switchDesTab('tep')"
+        style="flex:1;padding:7px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+               border:2px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.25);color:#fff">
+        TEP
+      </button>
+      <button id="des-tab-eval" onclick="switchDesTab('eval')"
+        style="flex:1;padding:7px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+               border:2px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6)">
+        Evaluación
+      </button>
+      <button id="des-tab-comp" onclick="switchDesTab('comp')"
+        style="flex:1;padding:7px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+               border:2px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6)">
+        Competencias
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB TEP -->
+  <div id="des-sec-tep" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px">
+    <div id="des-tep-sync-banner"
+      style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;
+             padding:10px 12px;font-size:12px;color:#92400e;text-align:center">
+      ⏳ Sincronizando con Asistencia…
+    </div>
+    <!-- Selector de fecha para sábados -->
+    <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0">
+      <div style="font-size:12px;font-weight:700;color:#0891b2;margin-bottom:8px">⚽ Registrar partido (sábado)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="des-tep-fecha"
+          style="flex:1;padding:9px;border:1px solid #ddd;border-radius:9px;font-size:13px">
+        <button onclick="loadTepFecha()"
+          style="padding:9px 14px;background:#0891b2;color:#fff;border:none;
+                 border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">
+          Cargar
+        </button>
+      </div>
+    </div>
+    <!-- Partidos del día seleccionado -->
+    <div id="des-tep-partidos-wrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div id="des-tep-fecha-label" style="font-size:13px;font-weight:700;color:#1e293b"></div>
+        <button onclick="addPartido()"
+          style="padding:6px 12px;background:#0891b2;color:#fff;border:none;
+                 border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
+          + Partido
+        </button>
+      </div>
+      <div id="des-tep-partidos-list"></div>
+    </div>
+    <!-- Vista acumulada -->
+    <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:#0891b2">📊 TEP Acumulado</div>
+        <button onclick="copyTepWhatsapp()"
+          style="padding:5px 10px;background:#25d366;color:#fff;border:none;
+                 border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">
+          📋 WhatsApp
+        </button>
+      </div>
+      <div id="des-tep-loading" style="text-align:center;color:#aaa;padding:20px;font-size:13px">Cargando…</div>
+      <div id="des-tep-tabla" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- TAB EVALUACIÓN -->
+  <div id="des-sec-eval" style="flex:1;overflow-y:auto;padding:10px;display:none;flex-direction:column;gap:10px">
+    <!-- Selector de fecha -->
+    <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0">
+      <div style="font-size:12px;font-weight:700;color:#0891b2;margin-bottom:8px">📅 Fecha de evaluación</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="des-eval-fecha"
+          style="flex:1;padding:9px;border:1px solid #ddd;border-radius:9px;font-size:13px">
+        <button onclick="loadEvalFecha()"
+          style="padding:9px 14px;background:#0891b2;color:#fff;border:none;
+                 border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">
+          Cargar
+        </button>
+      </div>
+    </div>
+    <!-- Grilla de evaluación -->
+    <div id="des-eval-grilla-wrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div id="des-eval-fecha-label" style="font-size:13px;font-weight:700;color:#1e293b"></div>
+        <button onclick="saveEvaluacion()"
+          style="padding:7px 14px;background:#0891b2;color:#fff;border:none;
+                 border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">
+          💾 Guardar
+        </button>
+      </div>
+      <div id="des-eval-grilla" style="overflow-x:auto"></div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button onclick="copyEvalWhatsapp()"
+          style="flex:1;padding:10px;background:#25d366;color:#fff;border:none;
+                 border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+          📋 Informe WhatsApp
+        </button>
+      </div>
+    </div>
+    <!-- Historial de fechas evaluadas -->
+    <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0">
+      <div style="font-size:12px;font-weight:700;color:#0891b2;margin-bottom:8px">🗂 Historial de evaluaciones</div>
+      <div id="des-eval-historial">
+        <div style="text-align:center;color:#aaa;padding:16px;font-size:13px">Sin evaluaciones registradas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB COMPETENCIAS -->
+  <div id="des-sec-comp" style="flex:1;overflow-y:auto;padding:10px;display:none;flex-direction:column;gap:10px">
+    <button onclick="openCompModal(null)"
+      style="width:100%;padding:13px;background:#0891b2;color:#fff;border:none;
+             border-radius:13px;font-size:14px;font-weight:600;cursor:pointer">
+      + Agregar competencia
+    </button>
+    <div id="des-comp-loading" class="loading"><div class="spinner"></div><span>Cargando…</span></div>
+    <div id="des-comp-list" style="display:none"></div>
+  </div>
+</div>
+
+<!-- PARTIDO MODAL (TEP sábado) -->
+<div class="modal-bg" id="des-partido-modal" onclick="closePartidoModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div id="des-partido-modal-title"
+      style="font-size:16px;font-weight:700;color:#0891b2;margin-bottom:12px"></div>
+    <div class="med-form-group">
+      <label class="med-form-label">Nombre del partido *</label>
+      <input type="text" id="des-partido-nombre" class="med-form-input"
+        placeholder="Ej: vs Belgrano">
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#475569;margin:12px 0 8px">Tiempos jugados por jugador</div>
+    <div id="des-partido-jugadores"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="savePartido()"
+        style="flex:1;padding:13px;background:#0891b2;color:#fff;border:none;
+               border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
+        Guardar partido
+      </button>
+      <button onclick="closePartidoModal()"
+        style="flex:1;padding:13px;background:#f5f5f5;color:#666;
+               border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPETENCIA MODAL -->
+<div class="modal-bg" id="des-comp-modal" onclick="closeCompModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="des-comp-modal-title"
+      style="font-size:16px;font-weight:700;color:#0891b2;margin-bottom:12px"></div>
+    <div class="med-form-group">
+      <label class="med-form-label">Nombre de la competencia *</label>
+      <input type="text" id="des-comp-nombre" class="med-form-input"
+        placeholder="Ej: Pase, Tackle, Posicionamiento…">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="saveComp()"
+        style="flex:1;padding:13px;background:#0891b2;color:#fff;border:none;
+               border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
+        Guardar
+      </button>
+      <button onclick="closeCompModal()"
+        style="flex:1;padding:13px;background:#f5f5f5;color:#666;
+               border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwU39mwJMMDsOrocFdZB-028Ng7rxFuR_XNiqs0mVw0zuEgq9Rml8SxJijAStr2rUtX/exec";
 
@@ -2109,7 +2310,7 @@ function showHomeScreen() {
   const adminOnly = ['home-mod-fixture','home-mod-gira','home-mod-usuarios'];
   const allMods   = ['home-mod-asistencia','home-mod-planificacion','home-mod-fixture',
                      'home-mod-novedades','home-mod-stats','home-mod-gira',
-                     'home-mod-jugadores','home-mod-usuarios'];
+                     'home-mod-jugadores','home-mod-usuarios','home-mod-desarrollo'];
 
   allMods.forEach(id => {
     const el = document.getElementById(id);
@@ -6214,6 +6415,785 @@ async function confirmDeletePlayer() {
     showToast('Error al eliminar. Verificá la conexión.');
   }
 }
+
+// ══════════════════════════════════════════════════════════════
+// TEP Y DESARROLLO MODULE
+// ══════════════════════════════════════════════════════════════
+
+let desState = {
+  tab:            'tep',
+  jugadores:      [],      // activos de la división
+  competencias:   [],      // activas
+  tepRecords:     [],      // todos los registros tep de la división
+  evalRecords:    [],      // todos los registros evaluaciones de la división
+  tepFechaActual: null,    // fecha seleccionada en tab TEP (string YYYY-MM-DD)
+  partidosDelDia: [],      // partidos cargados para tepFechaActual
+  evalFechaActual:null,    // fecha seleccionada en tab Eval
+  evalData:       {},      // { jugador_id: { competencia_id: puntaje } } para evalFechaActual
+  editingCompId:  null,    // competencia en edición
+  presentesPorFecha: {},   // { "YYYY-MM-DD": [jugador_id,...] } desde asistencia
+};
+
+// ── ENTRY ────────────────────────────────────────────────────
+async function enterDesarrollo() {
+  showScreen('desarrollo');
+  const div = (currentUser && currentUser.division) || state.division || 'M13';
+  document.getElementById('des-division').textContent = div;
+  switchDesTab('tep');
+  await loadDesarrolloData();
+}
+
+async function loadDesarrolloData() {
+  const div = currentDivision();
+  const divJugFilter = div
+    ? { select: 'id,nombre,apodo,apellido', order: 'apellido.asc,nombre.asc', division: 'eq.' + div, estado: 'eq.Activo' }
+    : { select: 'id,nombre,apodo,apellido', order: 'apellido.asc,nombre.asc', estado: 'eq.Activo' };
+
+  const divTepFilter  = div ? '&division=eq.' + encodeURIComponent(div) : '';
+  const divEvalFilter = div ? '&division=eq.' + encodeURIComponent(div) : '';
+
+  const [jugs, comps, teps, evals] = await Promise.all([
+    supaGet('jugadores',    divJugFilter),
+    supaGet('competencias', { select: '*', order: 'nombre.asc' }),
+    fetch(SUPA_URL + '/tep?select=*&order=fecha.asc' + divTepFilter, { headers: SUPA_HEADERS }).then(r => r.ok ? r.json() : []),
+    fetch(SUPA_URL + '/evaluaciones?select=*' + divEvalFilter, { headers: SUPA_HEADERS }).then(r => r.ok ? r.json() : [])
+  ]);
+
+  desState.jugadores    = jugs    || [];
+  desState.competencias = comps   || [];
+  desState.tepRecords   = teps    || [];
+  desState.evalRecords  = evals   || [];
+
+  // Sync TEP automático desde asistencia
+  await syncTepDesdeAsistencia();
+
+  renderTepTabla();
+  renderEvalHistorial();
+  renderCompList();
+}
+
+// ── TAB SWITCH ───────────────────────────────────────────────
+function switchDesTab(tab) {
+  desState.tab = tab;
+  ['tep','eval','comp'].forEach(t => {
+    const sec = document.getElementById('des-sec-' + (t === 'comp' ? 'comp' : t));
+    const btn = document.getElementById('des-tab-' + (t === 'comp' ? 'comp' : t));
+    if (!sec || !btn) return;
+    const isActive = t === tab;
+    sec.style.display  = isActive ? 'flex' : 'none';
+    btn.style.background    = isActive ? 'rgba(255,255,255,0.25)' : 'transparent';
+    btn.style.borderColor   = isActive ? 'rgba(255,255,255,0.6)'  : 'rgba(255,255,255,0.2)';
+    btn.style.color         = isActive ? '#fff'                    : 'rgba(255,255,255,0.6)';
+  });
+}
+
+// ── TEP SYNC DESDE ASISTENCIA ────────────────────────────────
+async function syncTepDesdeAsistencia() {
+  const div = currentDivision() || 'M13';
+  const banner = document.getElementById('des-tep-sync-banner');
+  if (banner) banner.style.display = 'block';
+
+  try {
+    // Traer asistencia del año actual
+    const year  = new Date().getFullYear();
+    const from  = year + '-01-01';
+    const to    = year + '-12-31';
+    const divAtt = div ? '&division=eq.' + encodeURIComponent(div) : '';
+    const attRows = await fetch(
+      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + from + '&fecha=lte.' + to + divAtt,
+      { headers: SUPA_HEADERS }
+    ).then(r => r.ok ? r.json() : []);
+
+    // Calcular qué fechas/jugadores ya tienen TEP
+    const tepSet = new Set(desState.tepRecords.map(t => t.jugador_id + '_' + t.fecha + '_' + t.tipo));
+
+    // Almacenar presentes por fecha para uso en partidos
+    desState.presentesPorFecha = {};
+    attRows.forEach(a => {
+      if (!desState.presentesPorFecha[a.fecha]) desState.presentesPorFecha[a.fecha] = [];
+      if (a.estado === 'Presente') desState.presentesPorFecha[a.fecha].push(a.jugador_id);
+    });
+
+    const nuevos = [];
+    for (const a of attRows) {
+      const fecha   = a.fecha;
+      const dow     = new Date(fecha + 'T12:00:00').getDay(); // 0=dom,1=lun...6=sab
+      const esSabado     = dow === 6;
+      const esEntrenamiento = dow === 1 || dow === 4; // lun=1, jue=4
+
+      if (!esEntrenamiento && !esSabado) continue;
+      if (a.estado !== 'Presente') continue;
+
+      if (esEntrenamiento) {
+        const key = a.jugador_id + '_' + fecha + '_entrenamiento';
+        if (!tepSet.has(key)) {
+          nuevos.push({
+            jugador_id: a.jugador_id,
+            fecha:      fecha,
+            tipo:       'entrenamiento',
+            partido:    null,
+            minutos:    90,
+            division:   div
+          });
+          tepSet.add(key);
+        }
+      }
+      // Sábados: se dejan como fechas vacías — no auto-importar minutos
+    }
+
+    if (nuevos.length > 0) {
+      // Insert en lotes de 50
+      for (let i = 0; i < nuevos.length; i += 50) {
+        const batch = nuevos.slice(i, i + 50);
+        await fetch(SUPA_URL + '/tep', {
+          method:  'POST',
+          headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+          body:    JSON.stringify(batch)
+        });
+      }
+      // Recargar tepRecords
+      const divTep = div ? '&division=eq.' + encodeURIComponent(div) : '';
+      desState.tepRecords = await fetch(
+        SUPA_URL + '/tep?select=*&order=fecha.asc' + divTep, { headers: SUPA_HEADERS }
+      ).then(r => r.ok ? r.json() : []);
+    }
+  } catch(e) {
+    console.error('syncTepDesdeAsistencia error:', e);
+  } finally {
+    if (banner) banner.style.display = 'none';
+  }
+}
+
+// ── TEP TABLA ACUMULADA ──────────────────────────────────────
+function renderTepTabla() {
+  const loading = document.getElementById('des-tep-loading');
+  const tabla   = document.getElementById('des-tep-tabla');
+  if (!loading || !tabla) return;
+  loading.style.display = 'none';
+  tabla.style.display   = 'block';
+
+  if (desState.jugadores.length === 0) {
+    tabla.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;font-size:13px">Sin jugadores</div>';
+    return;
+  }
+
+  // Calcular TEP por jugador
+  const tepMap = {}; // jugador_id -> { ent: min, part: min }
+  desState.tepRecords.forEach(t => {
+    if (!tepMap[t.jugador_id]) tepMap[t.jugador_id] = { ent: 0, part: 0 };
+    if (t.tipo === 'entrenamiento') tepMap[t.jugador_id].ent  += t.minutos;
+    if (t.tipo === 'partido')       tepMap[t.jugador_id].part += t.minutos;
+  });
+
+  const rows = desState.jugadores.map(j => {
+    const t     = tepMap[j.id] || { ent: 0, part: 0 };
+    const total = t.ent + t.part;
+    const nombre = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+    return { nombre, ent: t.ent, part: t.part, total };
+  }).sort((a, b) => b.total - a.total);
+
+  tabla.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+    '<thead><tr style="background:#f0f9ff">' +
+      '<th style="text-align:left;padding:7px 6px;color:#0891b2;font-weight:700">Jugador</th>' +
+      '<th style="text-align:right;padding:7px 4px;color:#0891b2;font-weight:700">Entr.</th>' +
+      '<th style="text-align:right;padding:7px 4px;color:#0891b2;font-weight:700">Part.</th>' +
+      '<th style="text-align:right;padding:7px 6px;color:#0891b2;font-weight:700">Total</th>' +
+    '</tr></thead><tbody>' +
+    rows.map((r, i) =>
+      '<tr style="background:' + (i % 2 === 0 ? '#fff' : '#f8fafc') + ';border-bottom:1px solid #f1f5f9">' +
+        '<td style="padding:7px 6px;color:#1e293b;font-weight:500">' + r.nombre + '</td>' +
+        '<td style="padding:7px 4px;text-align:right;color:#475569">' + r.ent + '</td>' +
+        '<td style="padding:7px 4px;text-align:right;color:#475569">' + r.part + '</td>' +
+        '<td style="padding:7px 6px;text-align:right;font-weight:700;color:#0891b2">' + r.total + '</td>' +
+      '</tr>'
+    ).join('') +
+    '</tbody></table>';
+}
+
+// ── TEP PARTIDOS (SÁBADOS) ────────────────────────────────────
+async function loadTepFecha() {
+  const fecha = document.getElementById('des-tep-fecha').value;
+  if (!fecha) { showToast('Seleccioná una fecha'); return; }
+
+  const dow = new Date(fecha + 'T12:00:00').getDay();
+  if (dow !== 6) { showToast('Solo se registran partidos los sábados'); return; }
+
+  desState.tepFechaActual = fecha;
+
+  // Partidos ya cargados para esa fecha
+  desState.partidosDelDia = [...new Set(
+    desState.tepRecords
+      .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido)
+      .map(t => t.partido)
+  )];
+
+  const label = formatFechaLabel(fecha);
+  document.getElementById('des-tep-fecha-label').textContent = label;
+  document.getElementById('des-tep-partidos-wrap').style.display = 'block';
+  renderPartidosDelDia();
+}
+
+function renderPartidosDelDia() {
+  const fecha    = desState.tepFechaActual;
+  const partidos = desState.partidosDelDia;
+  const el       = document.getElementById('des-tep-partidos-list');
+  if (!el) return;
+
+  if (partidos.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:16px;font-size:13px;' +
+      'background:#fff;border-radius:12px;border:1px solid #e2e8f0">Sin partidos registrados. Tocá + Partido para agregar.</div>';
+    return;
+  }
+
+  el.innerHTML = partidos.map(nombrePartido => {
+    const tepDePartido = desState.tepRecords.filter(t =>
+      t.fecha === fecha && t.tipo === 'partido' && t.partido === nombrePartido
+    );
+    const jugRows = tepDePartido.map(t => {
+      const j = desState.jugadores.find(jj => jj.id === t.jugador_id);
+      const nombre = j ? (j.apodo || j.apellido || j.nombre) : 'Jugador ' + t.jugador_id;
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;' +
+        'border-bottom:1px solid #f1f5f9;font-size:12px">' +
+        '<span style="color:#1e293b">' + nombre + '</span>' +
+        '<span style="font-weight:700;color:#0891b2">' + t.minutos + ' min</span>' +
+        '</div>';
+    }).join('');
+
+    return '<div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;' +
+      'padding:10px 12px;margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<div style="font-size:13px;font-weight:700;color:#0891b2">' + nombrePartido + '</div>' +
+        '<button onclick="editPartido(\'' + nombrePartido.replace(/'/g,"\\'") + '\')" ' +
+          'style="padding:4px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:7px;' +
+          'font-size:11px;font-weight:600;color:#0891b2;cursor:pointer">Editar</button>' +
+      '</div>' +
+      jugRows +
+    '</div>';
+  }).join('');
+}
+
+function addPartido() {
+  desState._editingPartidoNombre = null;
+  document.getElementById('des-partido-modal-title').textContent = 'Nuevo partido';
+  document.getElementById('des-partido-nombre').value = '';
+  renderPartidoJugadores(null);
+  document.getElementById('des-partido-modal').classList.add('open');
+}
+
+function editPartido(nombrePartido) {
+  desState._editingPartidoNombre = nombrePartido;
+  document.getElementById('des-partido-modal-title').textContent = 'Editar: ' + nombrePartido;
+  document.getElementById('des-partido-nombre').value = nombrePartido;
+  renderPartidoJugadores(nombrePartido);
+  document.getElementById('des-partido-modal').classList.add('open');
+}
+
+function renderPartidoJugadores(nombrePartido) {
+  const fecha    = desState.tepFechaActual;
+  const presentes = desState.presentesPorFecha[fecha] || [];
+  const jugActivos = desState.jugadores.filter(j => presentes.includes(j.id));
+  const el = document.getElementById('des-partido-jugadores');
+  if (!el) return;
+
+  if (jugActivos.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;font-size:13px;padding:12px">' +
+      'No hay jugadores con asistencia Presente para este sábado.</div>';
+    return;
+  }
+
+  // TEP acumulado del día por jugador (de otros partidos)
+  const tepDiaMap = {};
+  desState.tepRecords
+    .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido !== (nombrePartido || '____NUEVO____'))
+    .forEach(t => {
+      tepDiaMap[t.jugador_id] = (tepDiaMap[t.jugador_id] || 0) + t.minutos;
+    });
+
+  // Valores actuales del partido en edición
+  const tepPartidoActual = {};
+  if (nombrePartido) {
+    desState.tepRecords
+      .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido === nombrePartido)
+      .forEach(t => { tepPartidoActual[t.jugador_id] = t.minutos; });
+  }
+
+  el.innerHTML = jugActivos.map(j => {
+    const nombre   = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+    const yaJugo   = tepDiaMap[j.id] || 0;
+    const restante = Math.max(0, 60 - yaJugo);
+    const actual   = tepPartidoActual[j.id];
+
+    const op1Checked  = actual === 30  ? 'checked' : '';
+    const op2Checked  = actual === 30  ? '' : (actual === 60 || (actual > 30) ? 'checked' : '');
+    // Usar radio por opciones: no jugó / 1er tiempo / 2do tiempo / ambos
+    const ninguno  = (!actual || actual === 0)  ? 'checked' : '';
+    const primer   = actual === 30 ? 'checked' : '';
+    const segundo  = actual === 30 && tepPartidoActual[j.id+'_seg'] ? 'checked' : ''; // fallback
+    // Simplificado: usamos select
+    const opts = [
+      '<option value="0"'   + ((!actual || actual === 0) ? ' selected' : '') + '>No jugó</option>',
+      '<option value="30"'  + (actual === 30 && !tepPartidoActual[j.id+'_2t'] ? ' selected' : '') + '>1er tiempo (30 min)</option>',
+      '<option value="30_2" '+ (actual === 30 && tepPartidoActual[j.id+'_2t'] ? ' selected' : '') + '>2do tiempo (30 min)</option>',
+      '<option value="60"'  + (actual === 60 ? ' selected' : '') + '>Ambos tiempos (60 min)</option>',
+    ];
+
+    // Para distinguir 1er vs 2do tiempo en el TEP, guardamos en partido el valor minutos
+    // La selección "1er tiempo" y "2do tiempo" ambos son 30 min — diferenciamos por nombre interno
+    // Usamos value "30" para ambos (solo importa la suma para el tope)
+    const selectedVal = actual === 60 ? '60' : actual === 30 ? '30' : '0';
+
+    const disabled = restante === 0 && !actual ? 'style="opacity:0.4"' : '';
+
+    return '<div ' + disabled + ' style="display:flex;align-items:center;justify-content:space-between;' +
+      'padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+      '<div style="font-size:13px;color:#1e293b;flex:1">' + nombre +
+        (yaJugo > 0 ? '<span style="font-size:10px;color:#94a3b8;margin-left:6px">ya: ' + yaJugo + 'min</span>' : '') +
+      '</div>' +
+      '<select id="des-ptep-' + j.id + '" ' +
+        'style="padding:5px 8px;border:1px solid #ddd;border-radius:8px;font-size:12px;' +
+        'background:#f8fafc;color:#1e293b;max-width:150px">' +
+        '<option value="0"'  + (selectedVal === '0'  ? ' selected' : '') + '>No jugó</option>' +
+        '<option value="30"' + (selectedVal === '30' ? ' selected' : '') + '>1 tiempo (30 min)</option>' +
+        '<option value="60"' + (selectedVal === '60' ? ' selected' : '') + '>2 tiempos (60 min)</option>' +
+      '</select>' +
+    '</div>';
+  }).join('');
+}
+
+async function savePartido() {
+  const fecha         = desState.tepFechaActual;
+  const nombrePartido = document.getElementById('des-partido-nombre').value.trim();
+  if (!nombrePartido) { showToast('Ingresá el nombre del partido'); return; }
+
+  const div           = currentDivision() || 'M13';
+  const presentes     = desState.presentesPorFecha[fecha] || [];
+  const jugActivos    = desState.jugadores.filter(j => presentes.includes(j.id));
+
+  // Calcular TEP del día excluyendo este partido (para validar tope)
+  const oldNombre = desState._editingPartidoNombre;
+  const tepOtros = {};
+  desState.tepRecords
+    .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido !== (oldNombre || '____'))
+    .forEach(t => { tepOtros[t.jugador_id] = (tepOtros[t.jugador_id] || 0) + t.minutos; });
+
+  // Leer selects
+  const rows = [];
+  for (const j of jugActivos) {
+    const sel = document.getElementById('des-ptep-' + j.id);
+    if (!sel) continue;
+    let minutos = parseInt(sel.value) || 0;
+    // Aplicar tope
+    const yaOtros = tepOtros[j.id] || 0;
+    minutos = Math.min(minutos, Math.max(0, 60 - yaOtros));
+    if (minutos > 0) {
+      rows.push({ jugador_id: j.id, fecha, tipo: 'partido', partido: nombrePartido, minutos, division: div });
+    }
+  }
+
+  try {
+    // Borrar registros anteriores de este partido en esta fecha
+    if (oldNombre) {
+      // Obtener ids a borrar
+      const toDelete = desState.tepRecords.filter(t =>
+        t.fecha === fecha && t.tipo === 'partido' && t.partido === oldNombre
+      );
+      for (const t of toDelete) {
+        await fetch(SUPA_URL + '/tep?id=eq.' + t.id, { method: 'DELETE', headers: SUPA_HEADERS });
+      }
+    }
+    // Insertar nuevos
+    if (rows.length > 0) {
+      await fetch(SUPA_URL + '/tep', {
+        method:  'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+        body:    JSON.stringify(rows)
+      });
+    }
+    // Actualizar nombre en partidos del día
+    if (oldNombre && oldNombre !== nombrePartido) {
+      desState.partidosDelDia = desState.partidosDelDia.map(p => p === oldNombre ? nombrePartido : p);
+    } else if (!oldNombre && !desState.partidosDelDia.includes(nombrePartido)) {
+      desState.partidosDelDia.push(nombrePartido);
+    }
+
+    // Recargar tepRecords
+    const divTep = div ? '&division=eq.' + encodeURIComponent(div) : '';
+    desState.tepRecords = await fetch(
+      SUPA_URL + '/tep?select=*&order=fecha.asc' + divTep, { headers: SUPA_HEADERS }
+    ).then(r => r.ok ? r.json() : []);
+
+    closePartidoModal();
+    renderPartidosDelDia();
+    renderTepTabla();
+    showToast('✓ Partido guardado');
+  } catch(e) {
+    showToast('Error al guardar partido');
+  }
+}
+
+function closePartidoModal(e) {
+  if (e && e.target !== document.getElementById('des-partido-modal')) return;
+  document.getElementById('des-partido-modal').classList.remove('open');
+}
+
+// ── TEP WHATSAPP ──────────────────────────────────────────────
+function copyTepWhatsapp() {
+  const tepMap = {};
+  desState.tepRecords.forEach(t => {
+    if (!tepMap[t.jugador_id]) tepMap[t.jugador_id] = { ent: 0, part: 0 };
+    if (t.tipo === 'entrenamiento') tepMap[t.jugador_id].ent  += t.minutos;
+    if (t.tipo === 'partido')       tepMap[t.jugador_id].part += t.minutos;
+  });
+
+  const rows = desState.jugadores.map(j => {
+    const t   = tepMap[j.id] || { ent: 0, part: 0 };
+    const nombre = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+    return { nombre, ent: t.ent, part: t.part, total: t.ent + t.part };
+  }).sort((a, b) => b.total - a.total);
+
+  const div  = (currentUser && currentUser.division) || state.division || 'M13';
+  const year = new Date().getFullYear();
+
+  // Calcular anchos
+  const maxNombre = Math.max(...rows.map(r => r.nombre.length), 8);
+  const header = '```\n' +
+    '🚀 TEP ' + div + ' ' + year + '\n' +
+    pad('Jugador', maxNombre) + '  Entr  Part  Total\n' +
+    '─'.repeat(maxNombre + 22) + '\n' +
+    rows.map(r =>
+      pad(r.nombre, maxNombre) + '  ' +
+      padL(String(r.ent),  5) + '  ' +
+      padL(String(r.part), 4) + '  ' +
+      padL(String(r.total),5)
+    ).join('\n') + '\n```';
+
+  copyToClipboard(header);
+  showToast('✓ Copiado para WhatsApp');
+}
+
+function pad(str, len)  { return (str + ' '.repeat(len)).slice(0, len); }
+function padL(str, len) { return (' '.repeat(len) + str).slice(-len); }
+
+// ── EVALUACIÓN ────────────────────────────────────────────────
+async function loadEvalFecha() {
+  const fecha = document.getElementById('des-eval-fecha').value;
+  if (!fecha) { showToast('Seleccioná una fecha'); return; }
+  desState.evalFechaActual = fecha;
+
+  // Cargar datos existentes para esa fecha
+  const existing = desState.evalRecords.filter(e => e.fecha === fecha);
+  desState.evalData = {};
+  existing.forEach(e => {
+    if (!desState.evalData[e.jugador_id]) desState.evalData[e.jugador_id] = {};
+    desState.evalData[e.jugador_id][e.competencia_id] = e.puntaje;
+  });
+
+  document.getElementById('des-eval-fecha-label').textContent = formatFechaLabel(fecha);
+  document.getElementById('des-eval-grilla-wrap').style.display = 'block';
+  renderEvalGrilla();
+}
+
+function renderEvalGrilla() {
+  const el    = document.getElementById('des-eval-grilla');
+  const comps = desState.competencias.filter(c => c.activa);
+  const jugs  = desState.jugadores;
+
+  if (comps.length === 0) {
+    el.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px;font-size:13px">' +
+      'No hay competencias activas. Agregá desde la tab Competencias.</div>';
+    return;
+  }
+
+  // Tabla scrolleable horizontalmente
+  const headerCols = comps.map(c =>
+    '<th style="min-width:64px;padding:6px 4px;font-size:10px;font-weight:700;color:#0891b2;' +
+    'text-align:center;background:#f0f9ff;white-space:nowrap">' + c.nombre + '</th>'
+  ).join('');
+
+  const jugRows = jugs.map(j => {
+    const nombre = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+    const compCols = comps.map(c => {
+      const val = (desState.evalData[j.id] && desState.evalData[j.id][c.id]) || '';
+      return '<td style="padding:4px;text-align:center">' +
+        '<select onchange="updateEvalData(' + j.id + ',' + c.id + ',this.value)" ' +
+          'style="width:52px;padding:4px 2px;border:1px solid #ddd;border-radius:6px;' +
+          'font-size:12px;text-align:center;background:#fff">' +
+          '<option value="">—</option>' +
+          [1,2,3,4,5].map(n => '<option value="' + n + '"' + (val == n ? ' selected' : '') + '>' + n + '</option>').join('') +
+        '</select>' +
+      '</td>';
+    }).join('');
+    return '<tr>' +
+      '<td style="padding:6px 8px;font-size:12px;font-weight:600;color:#1e293b;' +
+      'white-space:nowrap;position:sticky;left:0;background:#fff;border-right:1px solid #e2e8f0">' +
+        nombre +
+      '</td>' + compCols + '</tr>';
+  }).join('');
+
+  el.innerHTML = '<table style="border-collapse:collapse;font-size:12px;width:100%">' +
+    '<thead><tr>' +
+      '<th style="padding:6px 8px;text-align:left;font-size:11px;font-weight:700;color:#475569;' +
+      'background:#f8fafc;position:sticky;left:0;border-right:1px solid #e2e8f0;white-space:nowrap">Jugador</th>' +
+      headerCols +
+    '</tr></thead>' +
+    '<tbody>' + jugRows + '</tbody>' +
+    '</table>';
+}
+
+function updateEvalData(jugadorId, competenciaId, valor) {
+  if (!desState.evalData[jugadorId]) desState.evalData[jugadorId] = {};
+  desState.evalData[jugadorId][competenciaId] = valor ? parseInt(valor) : null;
+}
+
+async function saveEvaluacion() {
+  const fecha = desState.evalFechaActual;
+  if (!fecha) return;
+  const div = currentDivision() || 'M13';
+
+  // Construir rows a upsert
+  const rows = [];
+  const comps = desState.competencias.filter(c => c.activa);
+  for (const j of desState.jugadores) {
+    for (const c of comps) {
+      const puntaje = desState.evalData[j.id] ? desState.evalData[j.id][c.id] : null;
+      // Buscar id existente
+      const existing = desState.evalRecords.find(e =>
+        e.jugador_id === j.id && e.competencia_id === c.id && e.fecha === fecha
+      );
+      rows.push({
+        id:             existing ? existing.id : undefined,
+        jugador_id:     j.id,
+        competencia_id: c.id,
+        fecha:          fecha,
+        puntaje:        puntaje || null,
+        division:       div
+      });
+    }
+  }
+
+  try {
+    // Upsert en lotes
+    const toUpsert = rows.map(r => {
+      const obj = { jugador_id: r.jugador_id, competencia_id: r.competencia_id, fecha: r.fecha, puntaje: r.puntaje, division: r.division };
+      if (r.id) obj.id = r.id;
+      return obj;
+    });
+    for (let i = 0; i < toUpsert.length; i += 50) {
+      const batch = toUpsert.slice(i, i + 50);
+      await fetch(SUPA_URL + '/evaluaciones', {
+        method:  'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body:    JSON.stringify(batch)
+      });
+    }
+    // Recargar evalRecords
+    const divEval = div ? '&division=eq.' + encodeURIComponent(div) : '';
+    desState.evalRecords = await fetch(
+      SUPA_URL + '/evaluaciones?select=*' + divEval, { headers: SUPA_HEADERS }
+    ).then(r => r.ok ? r.json() : []);
+
+    renderEvalHistorial();
+    showToast('✓ Evaluación guardada');
+  } catch(e) {
+    showToast('Error al guardar evaluación');
+  }
+}
+
+function renderEvalHistorial() {
+  const el = document.getElementById('des-eval-historial');
+  if (!el) return;
+  const fechas = [...new Set(desState.evalRecords.map(e => e.fecha))].sort().reverse();
+  if (fechas.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:16px;font-size:13px">Sin evaluaciones registradas</div>';
+    return;
+  }
+  el.innerHTML = fechas.map(f => {
+    const count = new Set(desState.evalRecords.filter(e => e.fecha === f && e.puntaje !== null).map(e => e.jugador_id)).size;
+    return '<div onclick="cargarEvalDesdeHistorial(\'' + f + '\')" ' +
+      'style="display:flex;justify-content:space-between;align-items:center;' +
+      'padding:10px 12px;background:#f8fafc;border-radius:10px;margin-bottom:6px;cursor:pointer;' +
+      'border:1px solid #e2e8f0">' +
+      '<div style="font-size:13px;font-weight:600;color:#1e293b">' + formatFechaLabel(f) + '</div>' +
+      '<div style="font-size:11px;color:#94a3b8">' + count + ' jugadores evaluados →</div>' +
+    '</div>';
+  }).join('');
+}
+
+function cargarEvalDesdeHistorial(fecha) {
+  document.getElementById('des-eval-fecha').value = fecha;
+  switchDesTab('eval');
+  loadEvalFecha();
+}
+
+// ── EVALUACIÓN WHATSAPP ───────────────────────────────────────
+function copyEvalWhatsapp() {
+  const fecha = desState.evalFechaActual;
+  if (!fecha) { showToast('Cargá una fecha de evaluación primero'); return; }
+  const comps  = desState.competencias.filter(c => c.activa);
+  const div    = (currentUser && currentUser.division) || state.division || 'M13';
+
+  const maxNombre = Math.max(...desState.jugadores.map(j => {
+    const n = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+    return n.length;
+  }), 8);
+  const compAbrev = comps.map(c => c.nombre.substring(0, 4).padEnd(4));
+
+  let txt = '```\n📋 Evaluación ' + div + '\n' + formatFechaLabel(fecha) + '\n';
+  txt += pad('Jugador', maxNombre) + '  ' + compAbrev.join('  ') + '\n';
+  txt += '─'.repeat(maxNombre + comps.length * 6) + '\n';
+
+  desState.jugadores.forEach(j => {
+    const nombre = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+    const vals   = comps.map(c => {
+      const v = desState.evalData[j.id] ? desState.evalData[j.id][c.id] : null;
+      return padL(v ? String(v) : '-', 4);
+    });
+    txt += pad(nombre, maxNombre) + '  ' + vals.join('  ') + '\n';
+  });
+  txt += '```';
+
+  copyToClipboard(txt);
+  showToast('✓ Copiado para WhatsApp');
+}
+
+// ── COMPETENCIAS ABM ──────────────────────────────────────────
+function renderCompList() {
+  const loading = document.getElementById('des-comp-loading');
+  const list    = document.getElementById('des-comp-list');
+  if (!loading || !list) return;
+  loading.style.display = 'none';
+  list.style.display    = 'block';
+
+  const comps = desState.competencias;
+  if (comps.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#aaa;padding:30px;font-size:13px">Sin competencias. Agregá una.</div>';
+    return;
+  }
+
+  list.innerHTML = comps.map(c => {
+    const activaBadge = c.activa
+      ? '<span style="font-size:11px;background:#f0fdf4;color:#065f46;padding:2px 8px;border-radius:8px;font-weight:700">Activa</span>'
+      : '<span style="font-size:11px;background:#f5f5f5;color:#aaa;padding:2px 8px;border-radius:8px;font-weight:700">Inactiva</span>';
+    return '<div class="player-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<div style="min-width:0">' +
+          '<div class="player-card-name">' + c.nombre + ' ' + activaBadge + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0">' +
+          '<button onclick="openCompModal(' + c.id + ')" ' +
+            'style="padding:6px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#0891b2;cursor:pointer">Editar</button>' +
+          '<button onclick="toggleComp(' + c.id + ',' + c.activa + ')" ' +
+            'style="padding:6px 10px;background:' + (c.activa ? '#fff8f0' : '#f0fdf4') + ';' +
+            'border:1px solid ' + (c.activa ? '#ffb74d' : '#86efac') + ';border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:' + (c.activa ? '#e65100' : '#065f46') + ';cursor:pointer">' +
+            (c.activa ? 'Desactivar' : 'Activar') + '</button>' +
+          '<button onclick="deleteComp(' + c.id + ')" ' +
+            'style="padding:6px 10px;background:#fff5f5;border:1px solid #ef9a9a;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#b71c1c;cursor:pointer">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openCompModal(id) {
+  desState.editingCompId = id;
+  const c = id ? desState.competencias.find(cc => cc.id === id) : null;
+  document.getElementById('des-comp-modal-title').textContent = c ? 'Editar competencia' : 'Nueva competencia';
+  document.getElementById('des-comp-nombre').value = c ? c.nombre : '';
+  document.getElementById('des-comp-modal').classList.add('open');
+}
+
+function closeCompModal(e) {
+  if (e && e.target !== document.getElementById('des-comp-modal')) return;
+  document.getElementById('des-comp-modal').classList.remove('open');
+}
+
+async function saveComp() {
+  const nombre = document.getElementById('des-comp-nombre').value.trim();
+  if (!nombre) { showToast('Ingresá el nombre de la competencia'); return; }
+
+  const id = desState.editingCompId;
+  try {
+    if (id) {
+      await fetch(SUPA_URL + '/competencias?id=eq.' + id, {
+        method:  'PATCH',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+        body:    JSON.stringify({ nombre })
+      });
+      const c = desState.competencias.find(cc => cc.id === id);
+      if (c) c.nombre = nombre;
+    } else {
+      const res = await fetch(SUPA_URL + '/competencias', {
+        method:  'POST',
+        headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
+        body:    JSON.stringify({ nombre, activa: true })
+      });
+      const data = await res.json();
+      if (Array.isArray(data) && data[0]) desState.competencias.push(data[0]);
+      desState.competencias.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+    closeCompModal();
+    renderCompList();
+    showToast('✓ Competencia guardada');
+  } catch(e) {
+    showToast('Error al guardar competencia');
+  }
+}
+
+async function toggleComp(id, activa) {
+  try {
+    await fetch(SUPA_URL + '/competencias?id=eq.' + id, {
+      method:  'PATCH',
+      headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+      body:    JSON.stringify({ activa: !activa })
+    });
+    const c = desState.competencias.find(cc => cc.id === id);
+    if (c) c.activa = !activa;
+    renderCompList();
+    showToast('✓ Estado actualizado');
+  } catch(e) {
+    showToast('Error al actualizar competencia');
+  }
+}
+
+async function deleteComp(id) {
+  if (!confirm('¿Eliminar esta competencia? Se perderán todas las evaluaciones asociadas.')) return;
+  try {
+    await fetch(SUPA_URL + '/evaluaciones?competencia_id=eq.' + id, { method: 'DELETE', headers: SUPA_HEADERS });
+    await fetch(SUPA_URL + '/competencias?id=eq.'  + id, { method: 'DELETE', headers: SUPA_HEADERS });
+    desState.competencias    = desState.competencias.filter(c => c.id !== id);
+    desState.evalRecords     = desState.evalRecords.filter(e => e.competencia_id !== id);
+    renderCompList();
+    showToast('✓ Competencia eliminada');
+  } catch(e) {
+    showToast('Error al eliminar competencia');
+  }
+}
+
+// ── HELPER ────────────────────────────────────────────────────
+function formatFechaLabel(fecha) {
+  const d = new Date(fecha + 'T12:00:00');
+  return DAYS_ES[d.getDay()] + ' ' + d.getDate() + ' de ' + MONTHS_ES[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {}).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
 
 </script>
 </body>
