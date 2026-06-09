@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.34</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.35</div>
     </div>
   </div>
 </div>
@@ -895,7 +895,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.34 · Deportiva Francesa 1913
+      V 1.0.35 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1040,9 +1040,14 @@ textarea.med-form-input { font-family:inherit; }
     </div>
     <div style="padding:8px 10px;background:#fff;border-top:1px solid #ddd;display:flex;gap:8px;flex-shrink:0">
       <button onclick="saveLineup()"
-        style="flex:1;padding:13px;background:#002395;color:#fff;border:none;
+        style="flex:2;padding:13px;background:#002395;color:#fff;border:none;
                border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
         Guardar equipo
+      </button>
+      <button onclick="confirmDeleteTeam()"
+        style="flex:1;padding:13px;background:#fff5f5;color:#b71c1c;
+               border:1px solid #ef9a9a;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer">
+        🗑 Eliminar
       </button>
       <button onclick="showHomeScreen()"
         style="flex:1;padding:13px;background:transparent;color:#666;
@@ -3259,6 +3264,46 @@ async function saveLineup() {
     showToast('Guardado localmente (sin conexión)');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar equipo'; }
+  }
+}
+
+async function confirmDeleteTeam() {
+  const lineup = getActiveLineup();
+  if (!lineup) { showToast('No hay equipo activo'); return; }
+  const nombre = lineup.team_name || lineup.team_id;
+  if (!confirm('¿Eliminar el equipo "' + nombre + '"? Esta acción no se puede deshacer.')) return;
+  await deleteTeam(lineup.team_id);
+}
+
+async function deleteTeam(teamId) {
+  try {
+    // 1) Obtener id real del equipo en Supabase
+    const eqRows = await supaGet('equipos', { select: 'id', team_key: 'eq.' + teamId });
+    if (eqRows && eqRows.length > 0) {
+      const eqId = eqRows[0].id;
+      // 2) Borrar equipo_posiciones (cascade)
+      await fetch(SUPA_URL + '/equipo_posiciones?equipo_id=eq.' + eqId, {
+        method: 'DELETE', headers: SUPA_HEADERS
+      });
+      // 3) Borrar equipo
+      await fetch(SUPA_URL + '/equipos?id=eq.' + eqId, {
+        method: 'DELETE', headers: SUPA_HEADERS
+      });
+    }
+    // 4) Remover del estado local y cache
+    planState.lineups = planState.lineups.filter(t => t.team_id !== teamId);
+    planState.activeTeamIdx = 0;
+    saveToStorage();
+    showToast('✓ Equipo eliminado');
+    // Volver a la lista de equipos o al home si no quedan equipos
+    if (planState.lineups.length === 0) {
+      showHomeScreen();
+    } else {
+      renderTeamTabs();
+      renderLineupList();
+    }
+  } catch(e) {
+    showToast('Error al eliminar el equipo. Verificá la conexión.');
   }
 }
 
