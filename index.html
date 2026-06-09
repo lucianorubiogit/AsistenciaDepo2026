@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.33</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.34</div>
     </div>
   </div>
 </div>
@@ -895,7 +895,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.33 · Deportiva Francesa 1913
+      V 1.0.34 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1223,9 +1223,30 @@ textarea.med-form-input { font-family:inherit; }
     <!-- Botón agregar -->
     <button onclick="openPlayerModal(null)"
       style="width:100%;padding:13px;background:#065f46;color:#fff;border:none;
-             border-radius:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">
+             border-radius:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px">
       + Agregar jugador
     </button>
+    <!-- Tabs de estado -->
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button id="tab-estado-Activo"
+        onclick="switchEstadoTab('Activo')"
+        style="flex:1;padding:8px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+               border:2px solid #065f46;background:#065f46;color:#fff">
+        Activos
+      </button>
+      <button id="tab-estado-Suspendido"
+        onclick="switchEstadoTab('Suspendido')"
+        style="flex:1;padding:8px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+               border:2px solid #ddd;background:#fff;color:#888">
+        Suspendidos
+      </button>
+      <button id="tab-estado-Baja"
+        onclick="switchEstadoTab('Baja')"
+        style="flex:1;padding:8px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+               border:2px solid #ddd;background:#fff;color:#888">
+        Bajas
+      </button>
+    </div>
     <!-- Loading -->
     <div id="players-loading" class="loading"><div class="spinner"></div><span>Cargando jugadores…</span></div>
     <!-- Lista -->
@@ -1380,6 +1401,38 @@ textarea.med-form-input { font-family:inherit; }
     <button onclick="closeDeleteModal()"
       style="width:100%;padding:12px;background:transparent;color:#666;
              border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- ESTADO JUGADOR MODAL -->
+<div class="modal-bg" id="player-estado-modal" onclick="closeEstadoModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="player-estado-modal-title"
+      style="font-size:16px;font-weight:700;color:#002395;margin-bottom:6px"></div>
+    <div style="font-size:13px;color:#888;margin-bottom:16px">Seleccioná el nuevo estado del jugador</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="saveEstadoJugador('Activo')"
+        style="width:100%;padding:13px;background:#f0fdf4;color:#065f46;
+               border:2px solid #065f46;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
+        ✅ Activo
+      </button>
+      <button onclick="saveEstadoJugador('Suspendido')"
+        style="width:100%;padding:13px;background:#fff8f0;color:#e65100;
+               border:2px solid #e65100;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
+        ⏸ Suspendido
+      </button>
+      <button onclick="saveEstadoJugador('Baja')"
+        style="width:100%;padding:13px;background:#fff5f5;color:#b71c1c;
+               border:2px solid #b71c1c;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
+        🔴 Baja
+      </button>
+    </div>
+    <button onclick="closeEstadoModal()"
+      style="width:100%;padding:12px;background:transparent;color:#666;
+             border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer;margin-top:10px">
       Cancelar
     </button>
   </div>
@@ -5178,7 +5231,7 @@ async function apiGetPlayers(payload) {
   try {
     // Fetch jugadores, asistencia existente y novedades médicas activas en paralelo
     const jugPromise = fetch(
-      SUPA_URL + '/jugadores?select=id,nombre,apodo&order=nombre.asc' + divJugFilter,
+      SUPA_URL + '/jugadores?select=id,nombre,apodo&order=nombre.asc&estado=eq.Activo' + divJugFilter,
       { headers: SUPA_HEADERS }
     );
 
@@ -5270,7 +5323,7 @@ function normalizeEstado(raw) {
 
 async function apiPlanningInit(payload) {
   const div = currentDivision();
-  const divJugFilter = div ? { select: 'id,nombre,apodo', order: 'nombre.asc', division: 'eq.' + div } : { select: 'id,nombre,apodo', order: 'nombre.asc' };
+  const divJugFilter = div ? { select: 'id,nombre,apodo', order: 'nombre.asc', division: 'eq.' + div, estado: 'eq.Activo' } : { select: 'id,nombre,apodo', order: 'nombre.asc', estado: 'eq.Activo' };
   const divEqFilter  = div ? { select: '*', order: 'id.asc', division: 'eq.' + div } : { select: '*', order: 'id.asc' };
 
   const [jugadores, posRows, equipoRows, eqPosRows] = await Promise.all([
@@ -5786,10 +5839,13 @@ let playersAbm = {
   list:          [],   // full player list from Supabase
   editingId:     null, // id being edited, null = new
   deletingId:    null, // id pending delete confirmation
+  estadoId:      null, // id pending estado change
+  estadoTab:     'Activo', // current tab: Activo | Suspendido | Baja
   positionsData: []    // posiciones from Supabase for the editing player
 };
 
 async function enterPlayers() {
+  playersAbm.estadoTab = 'Activo';
   showScreen('players');
   document.getElementById('players-loading').style.display = 'flex';
   document.getElementById('players-list').style.display    = 'none';
@@ -5801,9 +5857,10 @@ async function refreshPlayersList() {
   document.getElementById('players-list').style.display    = 'none';
   try {
     const div = currentDivision();
-    const divFilter = div ? '&division=eq.' + encodeURIComponent(div) : '';
+    const divFilter   = div ? '&division=eq.' + encodeURIComponent(div) : '';
+    const estadoFilter = '&estado=eq.' + encodeURIComponent(playersAbm.estadoTab);
     const res = await fetch(
-      SUPA_URL + '/jugadores?select=id,nombre,apodo,apellido,documento,fecha_nac,categoria,division,sexo,obra_social,email&order=apellido.asc,nombre.asc' + divFilter,
+      SUPA_URL + '/jugadores?select=id,nombre,apodo,apellido,documento,fecha_nac,categoria,division,sexo,obra_social,email,estado&order=apellido.asc,nombre.asc' + divFilter + estadoFilter,
       { headers: SUPA_HEADERS }
     );
     const rows = res.ok ? await res.json() : [];
@@ -5817,23 +5874,46 @@ async function refreshPlayersList() {
 function renderPlayersList(rows) {
   document.getElementById('players-loading').style.display = 'none';
   document.getElementById('players-count').textContent     = rows.length + ' jugadores';
+
+  // Update tab styles
+  ['Activo','Suspendido','Baja'].forEach(tab => {
+    const btn = document.getElementById('tab-estado-' + tab);
+    if (!btn) return;
+    const isActive = tab === playersAbm.estadoTab;
+    const colors = { Activo: '#065f46', Suspendido: '#e65100', Baja: '#b71c1c' };
+    const c = colors[tab];
+    btn.style.background   = isActive ? c    : '#fff';
+    btn.style.color        = isActive ? '#fff' : '#888';
+    btn.style.borderColor  = isActive ? c    : '#ddd';
+  });
+
   const el = document.getElementById('players-list');
   el.style.display = 'block';
   if (rows.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-size:13px">Sin jugadores cargados</div>';
+    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:40px;font-size:13px">Sin jugadores en esta categoría</div>';
     return;
   }
+
+  const estadoBadge = {
+    'Suspendido': '<span style="font-size:11px;font-weight:700;background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:8px;margin-left:6px">Suspendido</span>',
+    'Baja':       '<span style="font-size:11px;font-weight:700;background:#fff5f5;color:#b71c1c;padding:2px 8px;border-radius:8px;margin-left:6px">Baja</span>'
+  };
+
   el.innerHTML = rows.map(p => {
     const displayName = [p.apellido, p.nombre].filter(Boolean).join(', ') || p.nombre || '(Sin nombre)';
     const apodo       = p.apodo ? '"' + p.apodo + '"' : '';
     const meta        = [p.categoria, p.sexo, p.documento].filter(Boolean).join(' · ');
+    const badge       = estadoBadge[p.estado] || '';
     return '<div class="player-card">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
         '<div style="min-width:0">' +
-          '<div class="player-card-name">' + displayName + (apodo ? ' <span style="font-weight:400;color:#64748b">' + apodo + '</span>' : '') + '</div>' +
+          '<div class="player-card-name">' + displayName + (apodo ? ' <span style="font-weight:400;color:#64748b">' + apodo + '</span>' : '') + badge + '</div>' +
           (meta ? '<div class="player-card-meta">' + meta + '</div>' : '') +
         '</div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0">' +
+          '<button onclick="openEstadoModal(' + p.id + ')" ' +
+            'style="padding:6px 10px;background:#fff8f0;border:1px solid #ffb74d;border-radius:8px;' +
+            'font-size:12px;font-weight:600;color:#e65100;cursor:pointer" title="Cambiar estado">⚡</button>' +
           '<button onclick="openPlayerModal(' + p.id + ')" ' +
             'style="padding:6px 12px;background:#f0f2ff;border:1px solid #7b8fd4;border-radius:8px;' +
             'font-size:12px;font-weight:600;color:#002395;cursor:pointer">Editar</button>' +
@@ -5988,6 +6068,56 @@ async function savePlayer() {
     errEl.style.display = 'block';
     btn.disabled        = false;
     btn.textContent     = 'Guardar';
+  }
+}
+
+async function switchEstadoTab(tab) {
+  playersAbm.estadoTab = tab;
+  await refreshPlayersList();
+}
+
+function openEstadoModal(id) {
+  playersAbm.estadoId = id;
+  const p = playersAbm.list.find(r => r.id === id);
+  const displayName = p
+    ? ([p.apellido, p.nombre].filter(Boolean).join(', ') || p.nombre || 'este jugador')
+    : 'este jugador';
+  document.getElementById('player-estado-modal-title').textContent = displayName;
+  document.getElementById('player-estado-modal').classList.add('open');
+}
+
+function closeEstadoModal(e) {
+  if (e && e.target !== document.getElementById('player-estado-modal')) return;
+  document.getElementById('player-estado-modal').classList.remove('open');
+}
+
+async function saveEstadoJugador(nuevoEstado) {
+  const id = playersAbm.estadoId;
+  if (!id) return;
+
+  document.getElementById('player-estado-modal').classList.remove('open');
+
+  try {
+    // 1) Actualizar estado en jugadores
+    const res = await fetch(SUPA_URL + '/jugadores?id=eq.' + id, {
+      method:  'PATCH',
+      headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
+      body:    JSON.stringify({ estado: nuevoEstado })
+    });
+    if (!res.ok) throw new Error('Error al actualizar estado');
+
+    // 2) Si pasa a Baja o Suspendido, limpiar posiciones en equipos (cascade)
+    if (nuevoEstado === 'Baja' || nuevoEstado === 'Suspendido') {
+      await fetch(SUPA_URL + '/equipo_posiciones?jugador_id=eq.' + id, {
+        method:  'DELETE',
+        headers: SUPA_HEADERS
+      });
+    }
+
+    showToast('✓ Estado actualizado a ' + nuevoEstado);
+    await refreshPlayersList();
+  } catch(e) {
+    showToast('Error al actualizar estado. Verificá la conexión.');
   }
 }
 
