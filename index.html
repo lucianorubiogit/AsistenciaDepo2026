@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.36</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.37</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.36 · Deportiva Francesa 1913
+      V 1.0.37 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -6538,7 +6538,21 @@ async function syncTepDesdeAsistencia() {
           tepSet.add(key);
         }
       }
-      // Sábados: se dejan como fechas vacías — no auto-importar minutos
+
+      if (esSabado) {
+        const key = a.jugador_id + '_' + fecha + '_partido';
+        if (!tepSet.has(key)) {
+          nuevos.push({
+            jugador_id: a.jugador_id,
+            fecha:      fecha,
+            tipo:       'partido',
+            partido:    'Importado desde Asistencia',
+            minutos:    60,
+            division:   div
+          });
+          tepSet.add(key);
+        }
+      }
     }
 
     if (nuevos.length > 0) {
