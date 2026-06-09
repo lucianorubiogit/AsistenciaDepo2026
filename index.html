@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.32</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.33</div>
     </div>
   </div>
 </div>
@@ -895,7 +895,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.32 · Deportiva Francesa 1913
+      V 1.0.33 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -2241,6 +2241,9 @@ async function loadAttendanceScreen() {
   document.getElementById('player-list').style.display = 'none';
   document.getElementById('save-bar').style.display    = 'none';
   document.getElementById('att-pills').innerHTML       = '';
+  // Exportar a Google Sheets solo disponible para M13
+  const userDiv = (currentUser && currentUser.division) || state.division || 'M13';
+  document.getElementById('sheets-btn').style.display = userDiv === 'M13' ? '' : 'none';
 
   const d = state.selectedDate;
   let label = d.display;
