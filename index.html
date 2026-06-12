@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.41</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.42</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.41 · Deportiva Francesa 1913
+      V 1.0.42 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -7368,7 +7368,7 @@ async function syncTepDesdeAsistencia() {
     desState.presentesPorFecha = {};
     attRows.forEach(a => {
       if (!desState.presentesPorFecha[a.fecha]) desState.presentesPorFecha[a.fecha] = [];
-      if (a.estado === 'Presente') desState.presentesPorFecha[a.fecha].push(a.jugador_id);
+      if (a.estado === 'Presente') desState.presentesPorFecha[a.fecha].push(Number(a.jugador_id));
     });
 
     const nuevos = [];
