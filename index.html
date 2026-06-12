@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.44</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.45</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.44 · Deportiva Francesa 1913
+      V 1.0.45 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -7357,7 +7357,7 @@ async function syncTepDesdeAsistencia() {
     const to    = year + '-12-31';
     const divAtt = div ? '&division=eq.' + encodeURIComponent(div) : '';
     const attRows = await fetch(
-      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + from + '&fecha=lte.' + to + divAtt + '&limit=2000',
+      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + from + '&fecha=lte.' + to + divAtt + '&order=fecha.asc&limit=10000',
       { headers: SUPA_HEADERS }
     ).then(r => r.ok ? r.json() : []);
 
@@ -7368,7 +7368,6 @@ async function syncTepDesdeAsistencia() {
     desState.presentesPorFecha = {};
     attRows.forEach(a => {
       if (!desState.presentesPorFecha[a.fecha]) desState.presentesPorFecha[a.fecha] = [];
-      if (a.fecha === '2026-06-13') console.log('DEBUG ROW 13/06 estado:[' + a.estado + '] jugador_id:', a.jugador_id, 'charCodes:', [...a.estado].map(c=>c.charCodeAt(0)));
       if (a.estado === 'Presente') desState.presentesPorFecha[a.fecha].push(Number(a.jugador_id));
     });
 
@@ -7564,12 +7563,6 @@ function renderPartidoJugadores(nombrePartido) {
   const fecha    = desState.tepFechaActual;
   const presentes = desState.presentesPorFecha[fecha] || [];
   const jugActivos = desState.jugadores.filter(j => presentes.includes(j.id));
-  console.log('DEBUG TEP fecha:', fecha);
-  console.log('DEBUG presentesPorFecha keys:', Object.keys(desState.presentesPorFecha));
-  console.log('DEBUG presentes para fecha:', presentes);
-  console.log('DEBUG presentes tipos:', presentes.map(x => typeof x));
-  console.log('DEBUG jugadores ids (primeros 3):', desState.jugadores.slice(0,3).map(j => ({id: j.id, tipo: typeof j.id})));
-  console.log('DEBUG jugActivos count:', jugActivos.length);
   const el = document.getElementById('des-partido-jugadores');
   if (!el) return;
 
