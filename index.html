@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.46</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.47</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.46 · Deportiva Francesa 1913
+      V 1.0.47 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -4496,7 +4496,7 @@ async function loadAllStatsData() {
     fetch(SUPA_URL + '/novedades_medicas?select=*' + divFilter, { headers: SUPA_HEADERS }).then(r => r.ok ? r.json() : []),
     supaGet('jugadores', divJugFilter),
     supaGet('competencias', { select: '*', order: 'nombre.asc', activa: 'eq.true' }),
-    fetch(SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + year + '-01-01&fecha=lte.' + year + '-12-31' + divFilter + '&limit=2000', { headers: SUPA_HEADERS }).then(r => r.ok ? r.json() : [])
+    fetch(SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + year + '-01-01&fecha=lte.' + year + '-12-31' + divFilter + '&order=fecha.asc&limit=1000', { headers: SUPA_HEADERS }).then(r => r.ok ? r.json() : [])
   ]);
 
   attResults.forEach((result, i) => {
@@ -7356,15 +7356,19 @@ async function syncTepDesdeAsistencia() {
     const from  = year + '-01-01';
     const to    = year + '-12-31';
     const divAtt = div ? '&division=eq.' + encodeURIComponent(div) : '';
-    const attRows = await fetch(
-      SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + from + '&fecha=lte.' + to + divAtt + '&order=fecha.asc&limit=10000',
-      { headers: SUPA_HEADERS }
-    ).then(r => r.ok ? r.json() : []);
-
-    console.log('DEBUG attRows total:', attRows.length);
-    const jun13 = attRows.filter(a => a.fecha === '2026-06-13');
-    console.log('DEBUG registros 13/06 en attRows:', jun13.length);
-    console.log('DEBUG primeros 3 de 13/06:', JSON.stringify(jun13.slice(0,3)));
+    // Supabase limita a 1000 filas por request — paginamos de a 1000
+    let attRows = [];
+    let attOffset = 0;
+    const attPageSize = 1000;
+    while (true) {
+      const page = await fetch(
+        SUPA_URL + '/asistencia?select=jugador_id,fecha,estado&fecha=gte.' + from + '&fecha=lte.' + to + divAtt + '&estado=eq.Presente&order=fecha.asc&limit=' + attPageSize + '&offset=' + attOffset,
+        { headers: SUPA_HEADERS }
+      ).then(r => r.ok ? r.json() : []);
+      attRows = attRows.concat(page);
+      if (page.length < attPageSize) break;
+      attOffset += attPageSize;
+    }
 
     // Calcular qué fechas/jugadores ya tienen TEP
     const tepSet = new Set(desState.tepRecords.map(t => t.jugador_id + '_' + t.fecha + '_' + t.tipo));
