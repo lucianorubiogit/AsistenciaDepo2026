@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.47</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.48</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.47 · Deportiva Francesa 1913
+      V 1.0.48 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -2145,31 +2145,6 @@ textarea.med-form-input { font-family:inherit; }
              padding:10px 12px;font-size:12px;color:#92400e;text-align:center">
       ⏳ Sincronizando con Asistencia…
     </div>
-    <!-- Selector de fecha para sábados -->
-    <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0">
-      <div style="font-size:12px;font-weight:700;color:#0891b2;margin-bottom:8px">⚽ Registrar partido (sábado)</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="date" id="des-tep-fecha"
-          style="flex:1;padding:9px;border:1px solid #ddd;border-radius:9px;font-size:13px">
-        <button onclick="loadTepFecha()"
-          style="padding:9px 14px;background:#0891b2;color:#fff;border:none;
-                 border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">
-          Cargar
-        </button>
-      </div>
-    </div>
-    <!-- Partidos del día seleccionado -->
-    <div id="des-tep-partidos-wrap" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div id="des-tep-fecha-label" style="font-size:13px;font-weight:700;color:#1e293b"></div>
-        <button onclick="addPartido()"
-          style="padding:6px 12px;background:#0891b2;color:#fff;border:none;
-                 border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
-          + Partido
-        </button>
-      </div>
-      <div id="des-tep-partidos-list"></div>
-    </div>
     <!-- Vista acumulada -->
     <div style="background:#fff;border-radius:14px;padding:12px;border:1px solid #e2e8f0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -2240,33 +2215,7 @@ textarea.med-form-input { font-family:inherit; }
   </div>
 </div>
 
-<!-- PARTIDO MODAL (TEP sábado) -->
-<div class="modal-bg" id="des-partido-modal" onclick="closePartidoModal(event)">
-  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
-    <div class="modal-handle"></div>
-    <div id="des-partido-modal-title"
-      style="font-size:16px;font-weight:700;color:#0891b2;margin-bottom:12px"></div>
-    <div class="med-form-group">
-      <label class="med-form-label">Nombre del partido *</label>
-      <input type="text" id="des-partido-nombre" class="med-form-input"
-        placeholder="Ej: vs Belgrano">
-    </div>
-    <div style="font-size:12px;font-weight:700;color:#475569;margin:12px 0 8px">Tiempos jugados por jugador</div>
-    <div id="des-partido-jugadores"></div>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button onclick="savePartido()"
-        style="flex:1;padding:13px;background:#0891b2;color:#fff;border:none;
-               border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">
-        Guardar partido
-      </button>
-      <button onclick="closePartidoModal()"
-        style="flex:1;padding:13px;background:#f5f5f5;color:#666;
-               border:1px solid #ddd;border-radius:12px;font-size:14px;cursor:pointer">
-        Cancelar
-      </button>
-    </div>
-  </div>
-</div>
+<!-- Modal partido eliminado - TEP calculado automáticamente -->
 
 <!-- COMPETENCIA MODAL -->
 <div class="modal-bg" id="des-comp-modal" onclick="closeCompModal(event)">
@@ -7283,8 +7232,6 @@ let desState = {
   competencias:   [],      // activas
   tepRecords:     [],      // todos los registros tep de la división
   evalRecords:    [],      // todos los registros evaluaciones de la división
-  tepFechaActual: null,    // fecha seleccionada en tab TEP (string YYYY-MM-DD)
-  partidosDelDia: [],      // partidos cargados para tepFechaActual
   evalFechaActual:null,    // fecha seleccionada en tab Eval
   evalData:       {},      // { jugador_id: { competencia_id: puntaje } } para evalFechaActual
   editingCompId:  null,    // competencia en edición
@@ -7412,7 +7359,7 @@ async function syncTepDesdeAsistencia() {
             jugador_id: a.jugador_id,
             fecha:      fecha,
             tipo:       'partido',
-            partido:    'Importado desde Asistencia',
+            partido:    null,
             minutos:    60,
             division:   div
           });
@@ -7491,230 +7438,6 @@ function renderTepTabla() {
 }
 
 // ── TEP PARTIDOS (SÁBADOS) ────────────────────────────────────
-async function loadTepFecha() {
-  const fecha = document.getElementById('des-tep-fecha').value;
-  if (!fecha) { showToast('Seleccioná una fecha'); return; }
-
-  const dow = new Date(fecha + 'T12:00:00').getDay();
-  if (dow !== 6) { showToast('Solo se registran partidos los sábados'); return; }
-
-  desState.tepFechaActual = fecha;
-
-  // Partidos ya cargados para esa fecha
-  desState.partidosDelDia = [...new Set(
-    desState.tepRecords
-      .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido)
-      .map(t => t.partido)
-  )];
-
-  const label = formatFechaLabel(fecha);
-  document.getElementById('des-tep-fecha-label').textContent = label;
-  document.getElementById('des-tep-partidos-wrap').style.display = 'block';
-  renderPartidosDelDia();
-}
-
-function renderPartidosDelDia() {
-  const fecha    = desState.tepFechaActual;
-  const partidos = desState.partidosDelDia;
-  const el       = document.getElementById('des-tep-partidos-list');
-  if (!el) return;
-
-  if (partidos.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#aaa;padding:16px;font-size:13px;' +
-      'background:#fff;border-radius:12px;border:1px solid #e2e8f0">Sin partidos registrados. Tocá + Partido para agregar.</div>';
-    return;
-  }
-
-  el.innerHTML = partidos.map(nombrePartido => {
-    const tepDePartido = desState.tepRecords.filter(t =>
-      t.fecha === fecha && t.tipo === 'partido' && t.partido === nombrePartido
-    );
-    const jugRows = tepDePartido.map(t => {
-      const j = desState.jugadores.find(jj => jj.id === t.jugador_id);
-      const nombre = j ? (j.apodo || j.apellido || j.nombre) : 'Jugador ' + t.jugador_id;
-      return '<div style="display:flex;justify-content:space-between;padding:5px 0;' +
-        'border-bottom:1px solid #f1f5f9;font-size:12px">' +
-        '<span style="color:#1e293b">' + nombre + '</span>' +
-        '<span style="font-weight:700;color:#0891b2">' + t.minutos + ' min</span>' +
-        '</div>';
-    }).join('');
-
-    return '<div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;' +
-      'padding:10px 12px;margin-bottom:8px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-        '<div style="font-size:13px;font-weight:700;color:#0891b2">' + nombrePartido + '</div>' +
-        '<button onclick="editPartido(\'' + nombrePartido.replace(/'/g,"\\'") + '\')" ' +
-          'style="padding:4px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:7px;' +
-          'font-size:11px;font-weight:600;color:#0891b2;cursor:pointer">Editar</button>' +
-      '</div>' +
-      jugRows +
-    '</div>';
-  }).join('');
-}
-
-function addPartido() {
-  desState._editingPartidoNombre = null;
-  document.getElementById('des-partido-modal-title').textContent = 'Nuevo partido';
-  document.getElementById('des-partido-nombre').value = '';
-  renderPartidoJugadores(null);
-  document.getElementById('des-partido-modal').classList.add('open');
-}
-
-function editPartido(nombrePartido) {
-  desState._editingPartidoNombre = nombrePartido;
-  document.getElementById('des-partido-modal-title').textContent = 'Editar: ' + nombrePartido;
-  document.getElementById('des-partido-nombre').value = nombrePartido;
-  renderPartidoJugadores(nombrePartido);
-  document.getElementById('des-partido-modal').classList.add('open');
-}
-
-function renderPartidoJugadores(nombrePartido) {
-  const fecha    = desState.tepFechaActual;
-  const presentes = desState.presentesPorFecha[fecha] || [];
-  const jugActivos = desState.jugadores.filter(j => presentes.includes(j.id));
-  const el = document.getElementById('des-partido-jugadores');
-  if (!el) return;
-
-  if (jugActivos.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#aaa;font-size:13px;padding:12px">' +
-      'No hay jugadores con asistencia Presente para este sábado.</div>';
-    return;
-  }
-
-  // TEP acumulado del día por jugador (de otros partidos)
-  const tepDiaMap = {};
-  desState.tepRecords
-    .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido !== (nombrePartido || '____NUEVO____'))
-    .forEach(t => {
-      tepDiaMap[t.jugador_id] = (tepDiaMap[t.jugador_id] || 0) + t.minutos;
-    });
-
-  // Valores actuales del partido en edición
-  const tepPartidoActual = {};
-  if (nombrePartido) {
-    desState.tepRecords
-      .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido === nombrePartido)
-      .forEach(t => { tepPartidoActual[t.jugador_id] = t.minutos; });
-  }
-
-  el.innerHTML = jugActivos.map(j => {
-    const nombre   = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
-    const yaJugo   = tepDiaMap[j.id] || 0;
-    const restante = Math.max(0, 60 - yaJugo);
-    const actual   = tepPartidoActual[j.id];
-
-    const op1Checked  = actual === 30  ? 'checked' : '';
-    const op2Checked  = actual === 30  ? '' : (actual === 60 || (actual > 30) ? 'checked' : '');
-    // Usar radio por opciones: no jugó / 1er tiempo / 2do tiempo / ambos
-    const ninguno  = (!actual || actual === 0)  ? 'checked' : '';
-    const primer   = actual === 30 ? 'checked' : '';
-    const segundo  = actual === 30 && tepPartidoActual[j.id+'_seg'] ? 'checked' : ''; // fallback
-    // Simplificado: usamos select
-    const opts = [
-      '<option value="0"'   + ((!actual || actual === 0) ? ' selected' : '') + '>No jugó</option>',
-      '<option value="30"'  + (actual === 30 && !tepPartidoActual[j.id+'_2t'] ? ' selected' : '') + '>1er tiempo (30 min)</option>',
-      '<option value="30_2" '+ (actual === 30 && tepPartidoActual[j.id+'_2t'] ? ' selected' : '') + '>2do tiempo (30 min)</option>',
-      '<option value="60"'  + (actual === 60 ? ' selected' : '') + '>Ambos tiempos (60 min)</option>',
-    ];
-
-    // Para distinguir 1er vs 2do tiempo en el TEP, guardamos en partido el valor minutos
-    // La selección "1er tiempo" y "2do tiempo" ambos son 30 min — diferenciamos por nombre interno
-    // Usamos value "30" para ambos (solo importa la suma para el tope)
-    const selectedVal = actual === 60 ? '60' : actual === 30 ? '30' : '0';
-
-    const disabled = restante === 0 && !actual ? 'style="opacity:0.4"' : '';
-
-    return '<div ' + disabled + ' style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:8px 0;border-bottom:1px solid #f1f5f9">' +
-      '<div style="font-size:13px;color:#1e293b;flex:1">' + nombre +
-        (yaJugo > 0 ? '<span style="font-size:10px;color:#94a3b8;margin-left:6px">ya: ' + yaJugo + 'min</span>' : '') +
-      '</div>' +
-      '<select id="des-ptep-' + j.id + '" ' +
-        'style="padding:5px 8px;border:1px solid #ddd;border-radius:8px;font-size:12px;' +
-        'background:#f8fafc;color:#1e293b;max-width:150px">' +
-        '<option value="0"'  + (selectedVal === '0'  ? ' selected' : '') + '>No jugó</option>' +
-        '<option value="30"' + (selectedVal === '30' ? ' selected' : '') + '>1 tiempo (30 min)</option>' +
-        '<option value="60"' + (selectedVal === '60' ? ' selected' : '') + '>2 tiempos (60 min)</option>' +
-      '</select>' +
-    '</div>';
-  }).join('');
-}
-
-async function savePartido() {
-  const fecha         = desState.tepFechaActual;
-  const nombrePartido = document.getElementById('des-partido-nombre').value.trim();
-  if (!nombrePartido) { showToast('Ingresá el nombre del partido'); return; }
-
-  const div           = currentDivision() || 'M13';
-  const presentes     = desState.presentesPorFecha[fecha] || [];
-  const jugActivos    = desState.jugadores.filter(j => presentes.includes(j.id));
-
-  // Calcular TEP del día excluyendo este partido (para validar tope)
-  const oldNombre = desState._editingPartidoNombre;
-  const tepOtros = {};
-  desState.tepRecords
-    .filter(t => t.fecha === fecha && t.tipo === 'partido' && t.partido !== (oldNombre || '____'))
-    .forEach(t => { tepOtros[t.jugador_id] = (tepOtros[t.jugador_id] || 0) + t.minutos; });
-
-  // Leer selects
-  const rows = [];
-  for (const j of jugActivos) {
-    const sel = document.getElementById('des-ptep-' + j.id);
-    if (!sel) continue;
-    let minutos = parseInt(sel.value) || 0;
-    // Aplicar tope
-    const yaOtros = tepOtros[j.id] || 0;
-    minutos = Math.min(minutos, Math.max(0, 60 - yaOtros));
-    if (minutos > 0) {
-      rows.push({ jugador_id: j.id, fecha, tipo: 'partido', partido: nombrePartido, minutos, division: div });
-    }
-  }
-
-  try {
-    // Borrar registros anteriores de este partido en esta fecha
-    if (oldNombre) {
-      // Obtener ids a borrar
-      const toDelete = desState.tepRecords.filter(t =>
-        t.fecha === fecha && t.tipo === 'partido' && t.partido === oldNombre
-      );
-      for (const t of toDelete) {
-        await fetch(SUPA_URL + '/tep?id=eq.' + t.id, { method: 'DELETE', headers: SUPA_HEADERS });
-      }
-    }
-    // Insertar nuevos
-    if (rows.length > 0) {
-      await fetch(SUPA_URL + '/tep', {
-        method:  'POST',
-        headers: { ...SUPA_HEADERS, 'Prefer': 'return=minimal' },
-        body:    JSON.stringify(rows)
-      });
-    }
-    // Actualizar nombre en partidos del día
-    if (oldNombre && oldNombre !== nombrePartido) {
-      desState.partidosDelDia = desState.partidosDelDia.map(p => p === oldNombre ? nombrePartido : p);
-    } else if (!oldNombre && !desState.partidosDelDia.includes(nombrePartido)) {
-      desState.partidosDelDia.push(nombrePartido);
-    }
-
-    // Recargar tepRecords
-    const divTep = div ? '&division=eq.' + encodeURIComponent(div) : '';
-    desState.tepRecords = await fetch(
-      SUPA_URL + '/tep?select=*&order=fecha.asc' + divTep, { headers: SUPA_HEADERS }
-    ).then(r => r.ok ? r.json() : []);
-
-    closePartidoModal();
-    renderPartidosDelDia();
-    renderTepTabla();
-    showToast('✓ Partido guardado');
-  } catch(e) {
-    showToast('Error al guardar partido');
-  }
-}
-
-function closePartidoModal(e) {
-  if (e && e.target !== document.getElementById('des-partido-modal')) return;
-  document.getElementById('des-partido-modal').classList.remove('open');
-}
 
 // ── TEP WHATSAPP ──────────────────────────────────────────────
 function copyTepWhatsapp() {
