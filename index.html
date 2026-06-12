@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.42</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.43</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.42 · Deportiva Francesa 1913
+      V 1.0.43 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -7563,6 +7563,12 @@ function renderPartidoJugadores(nombrePartido) {
   const fecha    = desState.tepFechaActual;
   const presentes = desState.presentesPorFecha[fecha] || [];
   const jugActivos = desState.jugadores.filter(j => presentes.includes(j.id));
+  console.log('DEBUG TEP fecha:', fecha);
+  console.log('DEBUG presentesPorFecha keys:', Object.keys(desState.presentesPorFecha));
+  console.log('DEBUG presentes para fecha:', presentes);
+  console.log('DEBUG presentes tipos:', presentes.map(x => typeof x));
+  console.log('DEBUG jugadores ids (primeros 3):', desState.jugadores.slice(0,3).map(j => ({id: j.id, tipo: typeof j.id})));
+  console.log('DEBUG jugActivos count:', jugActivos.length);
   const el = document.getElementById('des-partido-jugadores');
   if (!el) return;
 
