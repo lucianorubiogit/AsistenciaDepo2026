@@ -3043,7 +3043,8 @@ let planState = {
   activePosModal:   null, // current position being assigned
   viewTeamIdx:      0,
   recentAttendance: {},   // { jugador_id: { "YYYY-MM-DD": "Presente"|"Ausente"|... } }
-  recentDates:      []    // last 2 training dates (strings "YYYY-MM-DD"), excluding today
+  recentDates:      [],   // last 2 training dates (strings "YYYY-MM-DD"), excluding today
+  injuredIds:       new Set() // jugador_ids con novedad médica activa
 };
 
 // ── HELPERS ────────────────────────────────────────────────
@@ -3171,7 +3172,8 @@ async function enterPlanning() {
   try {
     const [data] = await Promise.all([
       api({ action: "planningInit" }),
-      loadRecentAttendance()
+      loadRecentAttendance(),
+      loadPlanningInjuries()
     ]);
     if (data.ok) {
       if (data.players && data.players.length > 0) planState.players = data.players;
@@ -3245,6 +3247,23 @@ async function loadRecentAttendance() {
   } catch(e) {
     console.error('loadRecentAttendance error:', e);
     // Silently fail — attendance columns will be empty
+  }
+}
+
+// ── ACTIVE INJURIES FOR PLANNING MODAL ────────────────────
+async function loadPlanningInjuries() {
+  try {
+    const div = (currentUser && currentUser.division) || state.division || '';
+    const divFilter = div ? '&division=eq.' + encodeURIComponent(div) : '';
+    const res = await fetch(
+      SUPA_URL + '/novedades_medicas?select=jugador_id&estado=eq.Activa' + divFilter,
+      { headers: SUPA_HEADERS }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    planState.injuredIds = new Set(rows.map(r => String(r.jugador_id)));
+  } catch(e) {
+    console.error('loadPlanningInjuries error:', e);
   }
 }
 
@@ -3651,8 +3670,16 @@ function openPosModal(pos) {
 
   const lineup    = getActiveLineup();
   const currentId = lineup ? lineup.positions[pos] : null;
-  // usedIds = todos los jugadores asignados en CUALQUIER equipo activo
-  const usedIds = planState.lineups.flatMap(l => Object.values(l.positions || {}));
+
+  // Build a map: jugador_id → [team names where assigned] (across ALL lineups)
+  const playerTeamMap = {};
+  planState.lineups.forEach(l => {
+    Object.values(l.positions || {}).forEach(pid => {
+      const id = String(pid);
+      if (!playerTeamMap[id]) playerTeamMap[id] = [];
+      playerTeamMap[id].push(l.team_name || 'Equipo');
+    });
+  });
 
   // Determine if this is a forward or back position
   const isForward = FORWARDS.includes(pos);
@@ -3666,14 +3693,14 @@ function openPosModal(pos) {
 
   // 1) Primary: players with this exact position as primary
   const primary = planState.playersPos.filter(r => r.primary_position === pos);
-  renderModalGroup('pos-modal-primary', '⭐ Posición principal', primary, usedIds, currentId);
+  renderModalGroup('pos-modal-primary', '⭐ Posición principal', primary, playerTeamMap, currentId);
 
   // 2) Secondary: players with this exact position as secondary
   const primaryIds = primary.map(r => r.id);
   const secondary  = planState.playersPos.filter(r =>
     r.secondary_position === pos && !primaryIds.includes(r.id)
   );
-  renderModalGroup('pos-modal-secondary', '✦ Posición alternativa', secondary, usedIds, currentId);
+  renderModalGroup('pos-modal-secondary', '✦ Posición alternativa', secondary, playerTeamMap, currentId);
 
   // 3) Group (all forwards or all backs) — exclude those already shown above
   const shownIds   = [...primaryIds, ...secondary.map(r => r.id)];
@@ -3684,7 +3711,7 @@ function openPosModal(pos) {
   // Deduplicate
   const seen = new Set();
   const groupUnique = groupRecs.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
-  renderModalGroup('pos-modal-all', groupLabel, groupUnique, usedIds, currentId);
+  renderModalGroup('pos-modal-all', groupLabel, groupUnique, playerTeamMap, currentId);
   document.getElementById('pos-modal-all').style.display = groupUnique.length > 0 ? 'block' : 'none';
 
   // Hide the "show all" toggle button since group is always shown
@@ -3710,29 +3737,52 @@ function attDateHeader(dateStr) {
   return days[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
 }
 
-function renderModalGroup(containerId, label, records, usedIds, currentId) {
+function renderModalGroup(containerId, label, records, playerTeamMap, currentId) {
   const el = document.getElementById(containerId);
   if (records.length === 0) { el.innerHTML = ''; return; }
 
-  const dates    = planState.recentDates || [];   // up to 2 dates, desc order
-  const hasAtt   = dates.length > 0;
+  const dates  = planState.recentDates || [];
+  const hasAtt = dates.length > 0;
 
-  // Build header row if we have attendance dates
   const headerRow = hasAtt
     ? '<div class="att-modal-header">' +
         '<div class="att-modal-name-col"></div>' +
-        dates.map(d =>
-          '<div class="att-modal-col">' + attDateHeader(d) + '</div>'
-        ).join('') +
+        dates.map(d => '<div class="att-modal-col">' + attDateHeader(d) + '</div>').join('') +
       '</div>'
     : '';
 
   el.innerHTML = '<div class="section-label">' + label + '</div>' +
     headerRow +
     records.map(r => {
-      const init = (r.apodo || r.name || '').slice(0,2).toUpperCase();
-      const used = usedIds.includes(r.id) && r.id !== currentId;
-      const att  = planState.recentAttendance[r.id] || {};
+      const rid      = String(r.id);
+      const init     = (r.apodo || r.name || '').slice(0,2).toUpperCase();
+      const att      = planState.recentAttendance[rid] || {};
+      const injured  = planState.injuredIds && planState.injuredIds.has(rid);
+
+      // Teams where this player is already assigned (could be current pos in active team)
+      const teamsAssigned = (playerTeamMap[rid] || []);
+      // For badge: exclude current slot so we don't say "en Depo 1" when you're editing Depo 1's slot for this player
+      const lineup = getActiveLineup();
+      const assignedElsewhere = teamsAssigned.filter(tname => {
+        // Check if this assignment is in the active lineup for the current position (i.e. the player already here)
+        return !(lineup && lineup.positions[planState.activePosModal] === r.id && lineup.team_name === tname);
+      });
+
+      // Badge logic
+      let badge = '';
+      let rowClass = 'player-opt att-modal-row';
+      let clickAttr = 'onclick="assignPlayer(\'' + rid + '\')"';
+
+      if (injured) {
+        badge = '<span style="font-size:10px;color:#fff;font-weight:600;background:#b71c1c;border-radius:4px;padding:1px 5px">🤕 lesionado</span>';
+        rowClass += ' used';
+        clickAttr = ''; // no click for injured
+      } else if (assignedElsewhere.length > 0) {
+        const teamList = [...new Set(assignedElsewhere)].join(', ');
+        badge = '<span style="font-size:10px;color:#1565c0;font-weight:600;background:#e3f2fd;border-radius:4px;padding:1px 5px">en ' + teamList + '</span>';
+      } else {
+        badge = '<span style="font-size:10px;color:#15803d;font-weight:600;background:#dcfce7;border-radius:4px;padding:1px 5px">sin asignar</span>';
+      }
 
       const attCols = hasAtt
         ? dates.map(d => {
@@ -3741,14 +3791,10 @@ function renderModalGroup(containerId, label, records, usedIds, currentId) {
           }).join('')
         : '';
 
-      const badge = used
-        ? '<span style="font-size:10px;color:#b71c1c;font-weight:600">en uso</span>'
-        : '<span style="font-size:10px;color:#15803d;font-weight:600;background:#dcfce7;border-radius:4px;padding:1px 5px">sin asignar</span>';
-
-      return '<div class="player-opt att-modal-row' + (used ? ' used' : '') + '" onclick="assignPlayer(\'' + r.id + '\')">' +
+      return '<div class="' + rowClass + '" ' + clickAttr + '>' +
         '<div class="att-modal-name-col">' +
           '<div style="display:flex;align-items:center;gap:8px">' +
-            '<div class="pav">' + init + '</div>' +
+            '<div class="pav"' + (injured ? ' style="background:#b71c1c"' : '') + '>' + init + '</div>' +
             '<div>' +
               '<div style="font-size:13px;font-weight:600">' + (r.apodo ? '"' + r.apodo + '"' : r.name) + '</div>' +
               '<div style="font-size:10px;color:#aaa">' + r.name + '</div>' +
@@ -3766,8 +3812,17 @@ function toggleAllPlayers() {
   const allEl  = document.getElementById('pos-modal-all');
   const btn    = document.getElementById('btn-show-all');
   const lineup = getActiveLineup();
-  const usedIds = lineup ? Object.values(lineup.positions) : [];
   const currentId = lineup ? lineup.positions[planState.activePosModal] : null;
+
+  // Rebuild playerTeamMap for all lineups
+  const playerTeamMap = {};
+  planState.lineups.forEach(l => {
+    Object.values(l.positions || {}).forEach(pid => {
+      const id = String(pid);
+      if (!playerTeamMap[id]) playerTeamMap[id] = [];
+      playerTeamMap[id].push(l.team_name || 'Equipo');
+    });
+  });
 
   if (showingAllPlayers) {
     allEl.style.display = 'block';
@@ -3777,7 +3832,7 @@ function toggleAllPlayers() {
       ...planState.playersPos.filter(r => r.secondary_position === planState.activePosModal)
     ].map(r => r.id);
     const rest = planState.playersPos.filter(r => !usedInModal.includes(r.id));
-    renderModalGroup('pos-modal-all', 'Todos los jugadores', rest, usedIds, currentId);
+    renderModalGroup('pos-modal-all', 'Todos los jugadores', rest, playerTeamMap, currentId);
   } else {
     allEl.style.display = 'none';
     btn.textContent     = 'Mostrar todos los jugadores';
@@ -4825,8 +4880,7 @@ function renderTepChart() {
   if (!el) return;
   const year = new Date().getFullYear();
 
-  // Group TEP by month → compute avg per jugador
-  const monthMap = {}; // month (1-12) → { ent, part, jugs: Set }
+  const monthMap = {};
   statsState.tepRecords.forEach(t => {
     const m = parseInt(t.fecha.split('-')[1]);
     const y = parseInt(t.fecha.split('-')[0]);
@@ -4869,7 +4923,6 @@ function renderTepChart() {
   html += '</div><div style="text-align:center;font-size:11px;color:#bbb;margin-top:4px">Tocá un mes para ver el detalle por jugador</div>';
   el.innerHTML = html;
 
-  // Render month detail if one is selected
   renderTepMesDetail(monthMap);
 }
 
@@ -4885,11 +4938,10 @@ function renderTepMesDetail(monthMap) {
     detEl.style.display = 'none';
     return;
   }
-  const m    = tepSelectedMonth;
-  const year = new Date().getFullYear();
+  const m         = tepSelectedMonth;
+  const year      = new Date().getFullYear();
   const mesNombre = MONTH_NAMES[m] || ('Mes ' + m);
 
-  // Build per-player totals for this month
   const playerMap = {};
   statsState.tepRecords.forEach(t => {
     const tm = parseInt(t.fecha.split('-')[1]);
@@ -4909,15 +4961,11 @@ function renderTepMesDetail(monthMap) {
     .filter(r => r.total > 0)
     .sort((a, b) => b.total - a.total);
 
-  if (rows.length === 0) {
-    detEl.style.display = 'none';
-    return;
-  }
+  if (rows.length === 0) { detEl.style.display = 'none'; return; }
 
   const maxTotal = rows[0].total || 1;
   let html = '<div style="font-size:12px;font-weight:700;color:#0891b2;margin-bottom:8px">📅 ' + mesNombre + ' — detalle por jugador</div>';
   html += rows.map(r => {
-    const pct = Math.round(r.total / maxTotal * 100);
     return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
       '<div style="flex:1;font-size:12px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.nombre + '</div>' +
       '<div style="flex:2;display:flex;height:6px;border-radius:3px;overflow:hidden;background:#f0f0f0">' +
