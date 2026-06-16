@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.50</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.51</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.50 · Deportiva Francesa 1913
+      V 1.0.51 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1715,6 +1715,7 @@ textarea.med-form-input { font-family:inherit; }
     <div class="stats-card">
       <div class="stats-card-title">📈 Promedio TEP por mes (min/jugador)</div>
       <div id="stats-tep-chart" style="margin-top:8px"></div>
+      <div id="stats-tep-mes-detail" style="display:none;margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px"></div>
     </div>
     <!-- Ranking TEP -->
     <div class="stats-card" style="padding:0;overflow:hidden">
@@ -3650,7 +3651,8 @@ function openPosModal(pos) {
 
   const lineup    = getActiveLineup();
   const currentId = lineup ? lineup.positions[pos] : null;
-  const usedIds   = lineup ? Object.values(lineup.positions) : [];
+  // usedIds = todos los jugadores asignados en CUALQUIER equipo activo
+  const usedIds = planState.lineups.flatMap(l => Object.values(l.positions || {}));
 
   // Determine if this is a forward or back position
   const isForward = FORWARDS.includes(pos);
@@ -3739,6 +3741,10 @@ function renderModalGroup(containerId, label, records, usedIds, currentId) {
           }).join('')
         : '';
 
+      const badge = used
+        ? '<span style="font-size:10px;color:#b71c1c;font-weight:600">en uso</span>'
+        : '<span style="font-size:10px;color:#15803d;font-weight:600;background:#dcfce7;border-radius:4px;padding:1px 5px">sin asignar</span>';
+
       return '<div class="player-opt att-modal-row' + (used ? ' used' : '') + '" onclick="assignPlayer(\'' + r.id + '\')">' +
         '<div class="att-modal-name-col">' +
           '<div style="display:flex;align-items:center;gap:8px">' +
@@ -3748,7 +3754,7 @@ function renderModalGroup(containerId, label, records, usedIds, currentId) {
               '<div style="font-size:10px;color:#aaa">' + r.name + '</div>' +
             '</div>' +
           '</div>' +
-          (used ? '<span style="font-size:10px;color:#b71c1c">en uso</span>' : '') +
+          badge +
         '</div>' +
         attCols +
       '</div>';
@@ -4812,13 +4818,15 @@ function renderStatsTep() {
   renderTepRanking();
 }
 
+let tepSelectedMonth = null;
+
 function renderTepChart() {
   const el = document.getElementById('stats-tep-chart');
   if (!el) return;
   const year = new Date().getFullYear();
 
   // Group TEP by month → compute avg per jugador
-  const monthMap = {}; // month (1-12) → { total_min, jugadores: Set }
+  const monthMap = {}; // month (1-12) → { ent, part, jugs: Set }
   statsState.tepRecords.forEach(t => {
     const m = parseInt(t.fecha.split('-')[1]);
     const y = parseInt(t.fecha.split('-')[0]);
@@ -4832,6 +4840,8 @@ function renderTepChart() {
   const months = Object.keys(monthMap).map(Number).sort((a,b) => a-b);
   if (months.length === 0) {
     el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;font-size:13px">Sin datos de TEP</div>';
+    const detEl = document.getElementById('stats-tep-mes-detail');
+    if (detEl) detEl.style.display = 'none';
     return;
   }
 
@@ -4843,17 +4853,83 @@ function renderTepChart() {
 
   let html = '<div class="stats-month-bar-wrap">';
   months.forEach(m => {
-    const n    = monthMap[m].jugs.size || 1;
-    const avg  = Math.round((monthMap[m].ent + monthMap[m].part) / n);
-    const barH = Math.max(4, Math.round((avg / maxAvg) * chartH));
-    html += '<div class="stats-month-col">' +
-      '<div class="stats-month-pct" style="color:#0891b2">' + minToHHMM(avg) + '</div>' +
-      '<div class="stats-month-bar" style="height:' + barH + 'px;background:#0891b2"></div>' +
-      '<div class="stats-month-label">' + MONTH_SHORT[m] + '</div>' +
+    const n      = monthMap[m].jugs.size || 1;
+    const avg    = Math.round((monthMap[m].ent + monthMap[m].part) / n);
+    const barH   = Math.max(4, Math.round((avg / maxAvg) * chartH));
+    const isSel  = tepSelectedMonth === m;
+    const barCol = isSel ? '#0e7490' : '#0891b2';
+    const bgCol  = isSel ? '#e0f7fa' : 'transparent';
+    html += '<div class="stats-month-col" onclick="onTepMonthClick(' + m + ')" ' +
+      'style="cursor:pointer;border-radius:6px;background:' + bgCol + ';padding:2px 0">' +
+      '<div class="stats-month-pct" style="color:' + barCol + ';font-weight:' + (isSel ? '800' : '600') + '">' + minToHHMM(avg) + '</div>' +
+      '<div class="stats-month-bar" style="height:' + barH + 'px;background:' + barCol + ';border-radius:4px 4px 0 0"></div>' +
+      '<div class="stats-month-label" style="color:' + (isSel ? '#0e7490' : '#888') + ';font-weight:' + (isSel ? '700' : '400') + '">' + MONTH_SHORT[m] + '</div>' +
     '</div>';
   });
-  html += '</div>';
+  html += '</div><div style="text-align:center;font-size:11px;color:#bbb;margin-top:4px">Tocá un mes para ver el detalle por jugador</div>';
   el.innerHTML = html;
+
+  // Render month detail if one is selected
+  renderTepMesDetail(monthMap);
+}
+
+function onTepMonthClick(m) {
+  tepSelectedMonth = (tepSelectedMonth === m) ? null : m;
+  renderTepChart();
+}
+
+function renderTepMesDetail(monthMap) {
+  const detEl = document.getElementById('stats-tep-mes-detail');
+  if (!detEl) return;
+  if (!tepSelectedMonth || !monthMap || !monthMap[tepSelectedMonth]) {
+    detEl.style.display = 'none';
+    return;
+  }
+  const m    = tepSelectedMonth;
+  const year = new Date().getFullYear();
+  const mesNombre = MONTH_NAMES[m] || ('Mes ' + m);
+
+  // Build per-player totals for this month
+  const playerMap = {};
+  statsState.tepRecords.forEach(t => {
+    const tm = parseInt(t.fecha.split('-')[1]);
+    const ty = parseInt(t.fecha.split('-')[0]);
+    if (ty !== year || tm !== m) return;
+    if (!playerMap[t.jugador_id]) playerMap[t.jugador_id] = { ent: 0, part: 0 };
+    if (t.tipo === 'entrenamiento') playerMap[t.jugador_id].ent  += t.minutos;
+    if (t.tipo === 'partido')       playerMap[t.jugador_id].part += t.minutos;
+  });
+
+  const rows = statsState.jugadores
+    .map(j => {
+      const nombre = j.apodo || ((j.apellido || '') + (j.nombre ? ' ' + j.nombre.split(' ')[0] : '')).trim() || j.nombre;
+      const p = playerMap[j.id] || { ent: 0, part: 0 };
+      return { nombre, ent: p.ent, part: p.part, total: p.ent + p.part };
+    })
+    .filter(r => r.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  if (rows.length === 0) {
+    detEl.style.display = 'none';
+    return;
+  }
+
+  const maxTotal = rows[0].total || 1;
+  let html = '<div style="font-size:12px;font-weight:700;color:#0891b2;margin-bottom:8px">📅 ' + mesNombre + ' — detalle por jugador</div>';
+  html += rows.map(r => {
+    const pct = Math.round(r.total / maxTotal * 100);
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+      '<div style="flex:1;font-size:12px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.nombre + '</div>' +
+      '<div style="flex:2;display:flex;height:6px;border-radius:3px;overflow:hidden;background:#f0f0f0">' +
+        '<div style="width:' + Math.round(r.ent / maxTotal * 100) + '%;background:#0891b2"></div>' +
+        '<div style="width:' + Math.round(r.part / maxTotal * 100) + '%;background:#06b6d4"></div>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:700;color:#0891b2;min-width:40px;text-align:right">' + minToHHMM(r.total) + '</div>' +
+    '</div>';
+  }).join('');
+
+  detEl.innerHTML = html;
+  detEl.style.display = 'block';
 }
 
 function renderTepRanking() {
@@ -4891,21 +4967,24 @@ function renderTepRanking() {
   if (sumEl) sumEl.textContent = above + ' jugadores ≥ ' + threshold + '% del máximo · ' + below + ' por debajo';
 
   el.innerHTML = rows.map(r => {
-    const pct    = Math.round(r.total / maxTotal * 100);
-    const isOk   = r.total >= thresholdMin;
-    const color  = isOk ? '#0891b2' : '#e65100';
+    const pct          = Math.round(r.total / maxTotal * 100);
+    const isOk         = r.total >= thresholdMin;
+    const color        = isOk ? '#0891b2' : '#e65100';
+    const barColorEnt  = isOk ? '#0891b2' : '#ef6c00';
+    const barColorPart = isOk ? '#06b6d4' : '#ffa726';
     const entPct = r.total > 0 ? Math.round(r.ent  / r.total * 100) : 0;
     const parPct = r.total > 0 ? Math.round(r.part / r.total * 100) : 0;
+    const rowBorder = isOk ? '' : 'border-left:3px solid #e65100;padding-left:8px;';
 
-    return '<div class="stats-player-row" onclick="openPerfilModal(' + r.id + ')" style="cursor:pointer">' +
+    return '<div class="stats-player-row" onclick="openPerfilModal(' + r.id + ')" style="cursor:pointer;' + rowBorder + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">' +
         '<div class="stats-player-name">' + r.nombre + '</div>' +
         '<div style="font-size:12px;font-weight:700;color:' + color + '">' + minToHHMM(r.total) + '</div>' +
       '</div>' +
       // Barra apilada: entr + part
       '<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:#f0f0f0;margin-bottom:4px">' +
-        '<div style="width:' + Math.round(entPct * pct / 100) + '%;background:#0891b2;transition:width 0.3s"></div>' +
-        '<div style="width:' + Math.round(parPct * pct / 100) + '%;background:#06b6d4;transition:width 0.3s"></div>' +
+        '<div style="width:' + Math.round(entPct * pct / 100) + '%;background:' + barColorEnt  + ';transition:width 0.3s,background 0.3s"></div>' +
+        '<div style="width:' + Math.round(parPct * pct / 100) + '%;background:' + barColorPart + ';transition:width 0.3s,background 0.3s"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;font-size:10px;color:#aaa">' +
         '<span>🏋️ ' + minToHHMM(r.ent)  + ' entr</span>' +
