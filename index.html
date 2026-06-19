@@ -465,6 +465,32 @@
 }
 .fix-conflict-pair:last-child { border-bottom:none; }
 .fix-conflict-pair input[type=checkbox] { width:16px;height:16px;cursor:pointer;accent-color:#7b1fa2; }
+.fix-visitor-block {
+  border:1px solid #e8e8e8;border-radius:10px;margin-bottom:8px;overflow:hidden;
+}
+.fix-visitor-club-row {
+  display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafafa;
+}
+.fix-visitor-teams {
+  padding:6px 10px 8px 10px;background:#fff;
+}
+.fix-visitor-team-row {
+  display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f5f5;
+}
+.fix-visitor-team-row:last-child { border-bottom:none; }
+.fix-team-label {
+  font-size:11px;color:#999;font-weight:600;width:60px;flex-shrink:0;
+}
+.fix-team-name-input {
+  flex:1;padding:6px 8px;border:1px solid #e8e8e8;border-radius:7px;font-size:13px;
+}
+.fix-team-del {
+  background:none;border:none;color:#ccc;font-size:15px;cursor:pointer;padding:2px 4px;
+}
+.fix-add-team-btn {
+  margin-top:6px;padding:5px 10px;background:none;border:1px dashed #ccc;
+  border-radius:7px;font-size:12px;color:#888;cursor:pointer;width:100%;
+}
 
 /* ── MATCH CARD ── */
 .fix-match {
@@ -770,7 +796,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.53</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.54</div>
     </div>
   </div>
 </div>
@@ -921,7 +947,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.53 · Deportiva Francesa 1913
+      V 1.0.54 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -4088,13 +4114,78 @@ function addVisitor() {
     return;
   }
   const id = ++fixVisitorCounter;
-  fixState.visitors.push({ id, name: '', count: 1, conflicts: new Set(), expanded: false });
+  fixState.visitors.push({
+    id,
+    name: '',
+    teams: [{ id: 0, name: '1' }],
+    conflicts: new Set(),
+    expanded: false
+  });
   renderVisitors();
 }
 
 function removeVisitor(id) {
   fixState.visitors = fixState.visitors.filter(v => v.id !== id);
   renderVisitors();
+}
+
+function addTeamToVisitor(visId) {
+  const v = fixState.visitors.find(v => v.id === visId);
+  if (!v) return;
+  const nextId = v.teams.length > 0 ? Math.max(...v.teams.map(t => t.id)) + 1 : 0;
+  v.teams.push({ id: nextId, name: String(v.teams.length + 1) });
+  renderVisitors();
+}
+
+function removeTeamFromVisitor(visId, teamId) {
+  const v = fixState.visitors.find(v => v.id === visId);
+  if (!v || v.teams.length <= 1) return;
+  v.teams = v.teams.filter(t => t.id !== teamId);
+  // Clean conflicts that reference removed team
+  const validIds = new Set(v.teams.map(t => 'vis_' + visId + '_' + t.id));
+  const newConflicts = new Set();
+  v.conflicts.forEach(key => {
+    const [idA, idB] = key.split('|');
+    if (validIds.has(idA) && validIds.has(idB)) newConflicts.add(key);
+  });
+  v.conflicts = newConflicts;
+  if (v.teams.length <= 1) v.expanded = false;
+  renderVisitors();
+}
+
+function updateVisitorName(visId, value) {
+  const v = fixState.visitors.find(v => v.id === visId);
+  if (v) { v.name = value; }
+}
+
+function updateTeamName(visId, teamId, value) {
+  const v = fixState.visitors.find(v => v.id === visId);
+  if (!v) return;
+  const t = v.teams.find(t => t.id === teamId);
+  if (t) t.name = value;
+  // Re-render conflict panel labels if expanded
+  if (v.expanded) renderVisitors();
+}
+
+function toggleConflictPanel(visId) {
+  const v = fixState.visitors.find(v => v.id === visId);
+  if (!v) return;
+  v.expanded = !v.expanded;
+  renderVisitors();
+}
+
+function toggleConflictPair(visId, key, checked) {
+  const v = fixState.visitors.find(v => v.id === visId);
+  if (!v) return;
+  if (!v.conflicts) v.conflicts = new Set();
+  if (checked) v.conflicts.add(key);
+  else v.conflicts.delete(key);
+  // Update button label without full re-render
+  const btn = document.querySelector('#fix-vblock-' + visId + ' .fix-conflict-btn');
+  if (btn) {
+    const count = v.conflicts.size;
+    btn.textContent = '⚙' + (count > 0 ? ' ' + count : '');
+  }
 }
 
 function renderVisitors() {
@@ -4104,40 +4195,61 @@ function renderVisitors() {
     document.getElementById('fix-add-visitor-btn').style.display = 'block';
     return;
   }
+
   el.innerHTML = fixState.visitors.map(v => {
-    // Main row
-    const hasMultiple = v.count > 1;
-    const activeClass = (hasMultiple && v.expanded) ? ' active' : '';
+    const hasMultiple = v.teams.length > 1;
     const conflictCount = v.conflicts ? v.conflicts.size : 0;
     const conflictLabel = '⚙' + (conflictCount > 0 ? ' ' + conflictCount : '');
+    const activeClass = (hasMultiple && v.expanded) ? ' active' : '';
+
     const conflictBtn = hasMultiple
       ? '<button class="fix-conflict-btn' + activeClass + '" onclick="toggleConflictPanel(' + v.id + ')">' + conflictLabel + '</button>'
       : '';
 
-    let html = '<div class="fix-visitor-row" id="fix-vrow-' + v.id + '">' +
+    // Club row
+    let html = '<div class="fix-visitor-block" id="fix-vblock-' + v.id + '">' +
+      '<div class="fix-visitor-club-row">' +
       '<input class="fix-visitor-name" type="text" placeholder="Nombre del club" ' +
-        'value="' + v.name + '" onchange="updateVisitor(' + v.id + ', \'name\', this.value)">' +
-      '<input class="fix-visitor-count" type="number" min="1" max="8" value="' + v.count + '" ' +
-        'onchange="updateVisitor(' + v.id + ', \'count\', parseInt(this.value)||1)">' +
+        'value="' + v.name + '" onchange="updateVisitorName(' + v.id + ', this.value)">' +
       conflictBtn +
       '<button class="fix-visitor-del" onclick="removeVisitor(' + v.id + ')">×</button>' +
       '</div>';
 
-    // Conflict panel (only when expanded and count > 1)
+    // Teams sub-list
+    html += '<div class="fix-visitor-teams">';
+    v.teams.forEach(t => {
+      const fullName = (v.name || 'Club') + ' ' + (t.name || '');
+      html +=
+        '<div class="fix-visitor-team-row">' +
+        '<span class="fix-team-label">Equipo</span>' +
+        '<input class="fix-team-name-input" type="text" value="' + t.name + '" ' +
+          'placeholder="ej: 1, Azul, M13..." ' +
+          'onchange="updateTeamName(' + v.id + ', ' + t.id + ', this.value)">' +
+        (v.teams.length > 1
+          ? '<button class="fix-team-del" onclick="removeTeamFromVisitor(' + v.id + ', ' + t.id + ')">×</button>'
+          : '<span style="width:23px"></span>') +
+        '</div>';
+    });
+    html += '<button class="fix-add-team-btn" onclick="addTeamToVisitor(' + v.id + ')">+ Agregar equipo</button>';
+    html += '</div>';
+
+    // Conflict panel
     if (hasMultiple && v.expanded) {
       const pairs = [];
-      for (let i = 0; i < v.count; i++) {
-        for (let j = i + 1; j < v.count; j++) {
-          const idA = 'vis_' + v.id + '_' + i;
-          const idB = 'vis_' + v.id + '_' + j;
+      for (let i = 0; i < v.teams.length; i++) {
+        for (let j = i + 1; j < v.teams.length; j++) {
+          const tA = v.teams[i], tB = v.teams[j];
+          const idA = 'vis_' + v.id + '_' + tA.id;
+          const idB = 'vis_' + v.id + '_' + tB.id;
           const key = idA + '|' + idB;
-          const labelA = v.name ? (v.name + ' ' + (i + 1)) : ('Equipo ' + (i + 1));
-          const labelB = v.name ? (v.name + ' ' + (j + 1)) : ('Equipo ' + (j + 1));
+          const labelA = (v.name || 'Club') + ' ' + (tA.name || (i + 1));
+          const labelB = (v.name || 'Club') + ' ' + (tB.name || (j + 1));
           const checked = v.conflicts && v.conflicts.has(key) ? ' checked' : '';
           pairs.push(
             '<div class="fix-conflict-pair">' +
-            '<input type="checkbox"' + checked + ' onchange="toggleConflictPair(' + v.id + ', \'' + key + '\', this.checked)">' +
-            '<span>' + labelA + ' y ' + labelB + ' no juegan simultáneo</span>' +
+            '<input type="checkbox"' + checked +
+              ' onchange="toggleConflictPair(' + v.id + ', \'' + key + '\', this.checked)">' +
+            '<span>' + labelA + ' y ' + labelB + ' — no simultáneo</span>' +
             '</div>'
           );
         }
@@ -4145,6 +4257,7 @@ function renderVisitors() {
       html += '<div class="fix-conflict-panel">' + pairs.join('') + '</div>';
     }
 
+    html += '</div>'; // close fix-visitor-block
     return html;
   }).join('');
 
@@ -4152,65 +4265,15 @@ function renderVisitors() {
     fixState.visitors.length >= 8 ? 'none' : 'block';
 }
 
-function updateVisitor(id, field, value) {
-  const v = fixState.visitors.find(v => v.id === id);
-  if (!v) return;
-  v[field] = value;
-  // If count changed, clean up conflicts that reference indices now out of range
-  if (field === 'count') {
-    if (v.conflicts) {
-      const newConflicts = new Set();
-      v.conflicts.forEach(key => {
-        const [idA, idB] = key.split('|');
-        const iA = parseInt(idA.split('_').pop());
-        const iB = parseInt(idB.split('_').pop());
-        if (iA < value && iB < value) newConflicts.add(key);
-      });
-      v.conflicts = newConflicts;
-    }
-    // Collapse panel if count drops to 1
-    if (value <= 1) v.expanded = false;
-    renderVisitors();
-  }
-}
-
-function toggleConflictPanel(id) {
-  const v = fixState.visitors.find(v => v.id === id);
-  if (!v) return;
-  v.expanded = !v.expanded;
-  renderVisitors();
-}
-
-function toggleConflictPair(id, key, checked) {
-  const v = fixState.visitors.find(v => v.id === id);
-  if (!v) return;
-  if (!v.conflicts) v.conflicts = new Set();
-  if (checked) v.conflicts.add(key);
-  else v.conflicts.delete(key);
-  // Update button label without full re-render to avoid losing focus
-  const btn = document.querySelector('#fix-vrow-' + id + ' .fix-conflict-btn');
-  if (btn) {
-    const count = v.conflicts.size;
-    btn.textContent = '⚙' + (count > 0 ? ' ' + count : '');
-  }
-}
-
 // ── GENERATE FIXTURE ──────────────────────────────────────
 function generateFixture() {
-  // Sync visitor inputs
+  // Sync club name inputs before generating
   document.querySelectorAll('.fix-visitor-name').forEach(inp => {
-    const row = inp.closest('.fix-visitor-row');
-    const del = row.querySelector('.fix-visitor-del');
-    const id  = parseInt(del.getAttribute('onclick').match(/\d+/)[0]);
-    const v   = fixState.visitors.find(v => v.id === id);
+    const block = inp.closest('.fix-visitor-block');
+    if (!block) return;
+    const id = parseInt(block.id.replace('fix-vblock-', ''));
+    const v  = fixState.visitors.find(v => v.id === id);
     if (v) v.name = inp.value.trim();
-  });
-  document.querySelectorAll('.fix-visitor-count').forEach(inp => {
-    const row = inp.closest('.fix-visitor-row');
-    const del = row.querySelector('.fix-visitor-del');
-    const id  = parseInt(del.getAttribute('onclick').match(/\d+/)[0]);
-    const v   = fixState.visitors.find(v => v.id === id);
-    if (v) v.count = parseInt(inp.value) || 1;
   });
 
   // Read params
@@ -4241,14 +4304,14 @@ function generateFixture() {
   const allTeams = [...depoTeams];
   fixState.visitors.forEach(v => {
     if (!v.name) return;
-    for (let i = 0; i < v.count; i++) {
+    (v.teams || []).forEach(t => {
       allTeams.push({
-        id:    'vis_' + v.id + '_' + i,
-        name:  v.count > 1 ? v.name + ' ' + (i + 1) : v.name,
-        club:  v.name,
-        level: i + 1
+        id:   'vis_' + v.id + '_' + t.id,
+        name: v.name + ' ' + (t.name || ''),
+        club: v.name,
+        level: t.id + 1
       });
-    }
+    });
   });
 
   if (allTeams.length < 2) {
