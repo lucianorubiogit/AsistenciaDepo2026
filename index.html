@@ -755,7 +755,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.51</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.52</div>
     </div>
   </div>
 </div>
@@ -906,7 +906,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.51 · Deportiva Francesa 1913
+      V 1.0.52 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -4067,7 +4067,7 @@ function renderDepoTeams() {
 
 // ── VISITORS ──────────────────────────────────────────────
 function addVisitor() {
-  const maxVisitors = 4;
+  const maxVisitors = 8;
   if (fixState.visitors.length >= maxVisitors) {
     showToast('Máximo ' + maxVisitors + ' clubes visitantes');
     return;
@@ -4093,13 +4093,13 @@ function renderVisitors() {
     '<div class="fix-visitor-row">' +
     '<input class="fix-visitor-name" type="text" placeholder="Nombre del club" ' +
       'value="' + v.name + '" onchange="updateVisitor(' + v.id + ', \'name\', this.value)">' +
-    '<input class="fix-visitor-count" type="number" min="1" max="4" value="' + v.count + '" ' +
+    '<input class="fix-visitor-count" type="number" min="1" max="8" value="' + v.count + '" ' +
       'onchange="updateVisitor(' + v.id + ', \'count\', parseInt(this.value)||1)">' +
     '<button class="fix-visitor-del" onclick="removeVisitor(' + v.id + ')">×</button>' +
     '</div>'
   ).join('');
   document.getElementById('fix-add-visitor-btn').style.display =
-    fixState.visitors.length >= 4 ? 'none' : 'block';
+    fixState.visitors.length >= 8 ? 'none' : 'block';
 }
 
 function updateVisitor(id, field, value) {
@@ -4168,10 +4168,27 @@ function generateFixture() {
     return;
   }
 
+  // Detect which Depo teams share players (those can't play simultaneously)
+  const conflictPairs = new Set();
+  const depoLineups = planState.lineups || [];
+  for (let i = 0; i < depoLineups.length; i++) {
+    const playersI = new Set(Object.values(depoLineups[i].positions || {}).filter(Boolean));
+    for (let j = i + 1; j < depoLineups.length; j++) {
+      const playersJ = Object.values(depoLineups[j].positions || {}).filter(Boolean);
+      const shared = playersJ.some(pid => playersI.has(pid));
+      if (shared) {
+        const keyA = 'depo_' + i + '|depo_' + j;
+        const keyB = 'depo_' + j + '|depo_' + i;
+        conflictPairs.add(keyA);
+        conflictPairs.add(keyB);
+      }
+    }
+  }
+
   // Build and schedule fixture
   const schedule = buildFixture({
     depoTeams, visitors: allTeams.filter(t => t.club !== 'Depo'),
-    numCourts, duration, interval, startMin, limitMin
+    numCourts, duration, interval, startMin, limitMin, conflictPairs
   });
 
   fixState.generatedSlots = schedule;
@@ -4182,11 +4199,17 @@ function generateFixture() {
 }
 
 function buildFixture(params) {
-  const { depoTeams, visitors, numCourts, duration, interval, startMin, limitMin } = params;
+  const { depoTeams, visitors, numCourts, duration, interval, startMin, limitMin, conflictPairs } = params;
   const slotSize = duration + interval;
   const allTeams = [...depoTeams, ...visitors];
   const depoIds  = new Set(depoTeams.map(t => t.id));
   const n        = allTeams.length;
+
+  // Helper: are two teams in conflict (share players)?
+  function areConflicted(idA, idB) {
+    if (!conflictPairs) return false;
+    return conflictPairs.has(idA + '|' + idB) || conflictPairs.has(idB + '|' + idA);
+  }
 
   // Build all cross-club pairs
   const allPairs = [];
@@ -4210,7 +4233,10 @@ function buildFixture(params) {
   const totalGames  = maxSlots * numCourts;
   const hardCap     = limitMin === Infinity ? Infinity : Math.ceil(totalGames * 2 / n);
 
-  const scheduled  = [];
+  // 60-min cap: each team can play at most floor(60/duration) games
+  const maxGamesPerTeam = Math.floor(60 / duration);
+
+  const scheduled  = []
   const teamCount  = {};
   allTeams.forEach(t => { teamCount[t.id] = 0; });
   let lastDepoPlayed = null;
@@ -4228,9 +4254,9 @@ function buildFixture(params) {
     // Teams urgently needing games (at or below current min AND have few slots left)
     const urgentTeams = new Set(
       allTeams
+        .filter(t => teamCount[t.id] < maxGamesPerTeam)  // only teams that haven't hit 60-min cap
         .filter(t => teamCount[t.id] <= currentMin)
         .filter(t => {
-          // count remaining pairs for this team
           const rem = allPairs.filter(p => !p.used &&
             (p.a.id===t.id || p.b.id===t.id)).length;
           return rem > 0 && rem <= slotsLeft + 1;
@@ -4238,12 +4264,14 @@ function buildFixture(params) {
         .map(t => t.id)
     );
 
-    const busyThisSlot = new Set();
-    let depoInSlot     = false;
-    let filledCourts   = 0;
+    const busyThisSlot   = new Set();
+    // Track which Depo teams are already playing this slot (for conflict checking)
+    const depoInSlot     = new Set();
+    let filledCourts     = 0;
 
-    // Preferred Depo for this slot (alternation)
+    // Preferred Depo for this slot (alternation — among those not yet at cap)
     const depoByCount = [...depoIds]
+      .filter(id => teamCount[id] < maxGamesPerTeam)
       .map(id => ({ id, count: teamCount[id] || 0 }))
       .sort((a,b) => a.count !== b.count ? a.count - b.count
         : (a.id === lastDepoPlayed ? 1 : -1));
@@ -4257,19 +4285,35 @@ function buildFixture(params) {
         if (pair.used) continue;
         const { a, b } = pair;
         if (busyThisSlot.has(a.id) || busyThisSlot.has(b.id)) continue;
-        if (depoInSlot && (depoIds.has(a.id) || depoIds.has(b.id))) continue;
+
+        // 60-min cap: skip if either team already reached max games
+        if (teamCount[a.id] >= maxGamesPerTeam || teamCount[b.id] >= maxGamesPerTeam) continue;
+
         if (teamCount[a.id] >= hardCap || teamCount[b.id] >= hardCap) continue;
+
+        // Conflict check: if either team is a Depo that shares players with a Depo already in this slot, skip
+        const aIsDepo = depoIds.has(a.id);
+        const bIsDepo = depoIds.has(b.id);
+        let conflictFound = false;
+        if (aIsDepo) {
+          for (const playingDepoId of depoInSlot) {
+            if (areConflicted(a.id, playingDepoId)) { conflictFound = true; break; }
+          }
+        }
+        if (!conflictFound && bIsDepo) {
+          for (const playingDepoId of depoInSlot) {
+            if (areConflicted(b.id, playingDepoId)) { conflictFound = true; break; }
+          }
+        }
+        if (conflictFound) continue;
 
         const ca = teamCount[a.id], cb = teamCount[b.id];
         const prioBonus = (pair.priority===1 && slot===0) ? -10000 : 0;
 
-        // Urgent team bonus: if either team is urgent, strongly prefer this pair
         const urgentBonus = (urgentTeams.has(a.id) || urgentTeams.has(b.id)) ? -2000 : 0;
-        // Extra bonus if BOTH teams are urgent
         const bothUrgent  = (urgentTeams.has(a.id) && urgentTeams.has(b.id)) ? -1000 : 0;
 
         // Depo alternation
-        const aIsDepo = depoIds.has(a.id), bIsDepo = depoIds.has(b.id);
         let depoBonus = 0;
         if (aIsDepo || bIsDepo) {
           const thisDepoId = aIsDepo ? a.id : b.id;
@@ -4288,12 +4332,10 @@ function buildFixture(params) {
       bestPair.used = true;
       busyThisSlot.add(bestPair.a.id);
       busyThisSlot.add(bestPair.b.id);
-      const aIsDepo = depoIds.has(bestPair.a.id);
-      const bIsDepo = depoIds.has(bestPair.b.id);
-      if (aIsDepo || bIsDepo) {
-        depoInSlot     = true;
-        lastDepoPlayed = aIsDepo ? bestPair.a.id : bestPair.b.id;
-      }
+      const aIsDepo2 = depoIds.has(bestPair.a.id);
+      const bIsDepo2 = depoIds.has(bestPair.b.id);
+      if (aIsDepo2) { depoInSlot.add(bestPair.a.id); lastDepoPlayed = bestPair.a.id; }
+      if (bIsDepo2) { depoInSlot.add(bestPair.b.id); lastDepoPlayed = bestPair.b.id; }
       teamCount[bestPair.a.id]++;
       teamCount[bestPair.b.id]++;
       filledCourts++;
@@ -4335,7 +4377,7 @@ function renderFixtureResult(schedule, numCourts, duration, startMin, limitMin) 
     if (mins > 60) {
       const name = schedule.find(s => s.homeId === id)?.home ||
                    schedule.find(s => s.awayId === id)?.away || id;
-      warnings.push({ text: '⚠️ ' + name + ' supera 60 min (' + mins + ' min)', type: 'warn' });
+      warnings.push({ text: '⚠️ ' + name + ' tiene ' + mins + ' min (supera el límite de 60)', type: 'warn' });
     }
   });
 
