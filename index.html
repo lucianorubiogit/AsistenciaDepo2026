@@ -796,7 +796,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.54</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.55</div>
     </div>
   </div>
 </div>
@@ -947,7 +947,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.54 · Deportiva Francesa 1913
+      V 1.0.55 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -4372,6 +4372,16 @@ function buildFixture(params) {
     return conflictPairs.has(idA + '|' + idB) || conflictPairs.has(idB + '|' + idA);
   }
 
+  // Pre-build set of all team IDs that appear in any conflict pair
+  const teamsWithConflicts = new Set();
+  if (conflictPairs) {
+    conflictPairs.forEach(key => {
+      const [idA, idB] = key.split('|');
+      teamsWithConflicts.add(idA);
+      teamsWithConflicts.add(idB);
+    });
+  }
+
   // Build all cross-club pairs
   const allPairs = [];
   const pairSet  = new Set();
@@ -4452,18 +4462,12 @@ function buildFixture(params) {
 
         if (teamCount[a.id] >= hardCap || teamCount[b.id] >= hardCap) continue;
 
-        // Conflict check: if either team is a Depo that shares players with a Depo already in this slot, skip
-        const aIsDepo = depoIds.has(a.id);
-        const bIsDepo = depoIds.has(b.id);
+        // Conflict check: skip if either team conflicts with any team already playing this slot
         let conflictFound = false;
-        if (aIsDepo) {
-          for (const playingDepoId of depoInSlot) {
-            if (areConflicted(a.id, playingDepoId)) { conflictFound = true; break; }
-          }
-        }
-        if (!conflictFound && bIsDepo) {
-          for (const playingDepoId of depoInSlot) {
-            if (areConflicted(b.id, playingDepoId)) { conflictFound = true; break; }
+        for (const playingId of depoInSlot) {
+          if (areConflicted(a.id, playingId) || areConflicted(b.id, playingId)) {
+            conflictFound = true;
+            break;
           }
         }
         if (conflictFound) continue;
@@ -4497,6 +4501,9 @@ function buildFixture(params) {
       const bIsDepo2 = depoIds.has(bestPair.b.id);
       if (aIsDepo2) { depoInSlot.add(bestPair.a.id); lastDepoPlayed = bestPair.a.id; }
       if (bIsDepo2) { depoInSlot.add(bestPair.b.id); lastDepoPlayed = bestPair.b.id; }
+      // Track any team that has conflicts configured (visitors included)
+      if (!aIsDepo2 && teamsWithConflicts.has(bestPair.a.id)) depoInSlot.add(bestPair.a.id);
+      if (!bIsDepo2 && teamsWithConflicts.has(bestPair.b.id)) depoInSlot.add(bestPair.b.id);
       teamCount[bestPair.a.id]++;
       teamCount[bestPair.b.id]++;
       filledCourts++;
