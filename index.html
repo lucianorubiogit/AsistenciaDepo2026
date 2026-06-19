@@ -796,7 +796,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.56</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.57</div>
     </div>
   </div>
 </div>
@@ -947,7 +947,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.56 · Deportiva Francesa 1913
+      V 1.0.57 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -1589,6 +1589,10 @@ textarea.med-form-input { font-family:inherit; }
     <!-- Configuración de partido -->
     <div class="fix-card">
       <div class="fix-card-title">⚙️ Parámetros del partido</div>
+      <div class="fix-form-row">
+        <label class="fix-label">Fecha del partido</label>
+        <input class="fix-input" type="date" id="fix-fecha">
+      </div>
       <div class="fix-form-row">
         <label class="fix-label">Canchas disponibles</label>
         <input class="fix-input" type="number" id="fix-canchas" value="2" min="1" max="6">
@@ -4619,10 +4623,21 @@ function renderFixtureResult(schedule, numCourts, duration, startMin, limitMin) 
 function copyFixtureWA() {
   const schedule   = fixState.generatedSlots;
   const numCourts  = fixState.params.numCourts || 2;
-  const today      = new Date();
-  const DAYS       = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-  const MONTHS     = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-  const dateStr    = DAYS[today.getDay()] + ' ' + today.getDate() + ' de ' + MONTHS[today.getMonth()];
+
+  const DAYS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+  const fechaInput = document.getElementById('fix-fecha').value;
+  let dateStr;
+  if (fechaInput) {
+    // Parse YYYY-MM-DD without timezone shift
+    const [y, m, d] = fechaInput.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dateStr = DAYS[dt.getDay()] + ' ' + d + ' de ' + MONTHS[m - 1] + ' ' + y;
+  } else {
+    const today = new Date();
+    dateStr = DAYS[today.getDay()] + ' ' + today.getDate() + ' de ' + MONTHS[today.getMonth()];
+  }
 
   let text = '🏉 *Fixture Infantiles M13*\n' + dateStr + '\n';
 
