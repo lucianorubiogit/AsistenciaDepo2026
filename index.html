@@ -450,6 +450,21 @@
   background:none;border:none;color:#ef9a9a;font-size:18px;cursor:pointer;
   padding:4px;line-height:1;
 }
+.fix-conflict-btn {
+  background:none;border:1px solid #ddd;border-radius:6px;color:#888;
+  font-size:11px;font-weight:600;cursor:pointer;padding:3px 7px;white-space:nowrap;
+  flex-shrink:0;
+}
+.fix-conflict-btn.active { border-color:#7b1fa2;color:#7b1fa2;background:#f9f0ff; }
+.fix-conflict-panel {
+  padding:8px 4px 4px 4px;border-top:1px solid #f0f0f0;margin-top:4px;
+}
+.fix-conflict-pair {
+  display:flex;align-items:center;gap:8px;padding:5px 0;
+  font-size:12px;color:#555;border-bottom:1px solid #fafafa;
+}
+.fix-conflict-pair:last-child { border-bottom:none; }
+.fix-conflict-pair input[type=checkbox] { width:16px;height:16px;cursor:pointer;accent-color:#7b1fa2; }
 
 /* ── MATCH CARD ── */
 .fix-match {
@@ -755,7 +770,7 @@ textarea.med-form-input { font-family:inherit; }
              autocomplete="current-password" placeholder="••••••">
       <button class="login-btn" onclick="doLogin()">Ingresar</button>
       <div id="login-error" class="login-error"></div>
-      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.52</div>
+      <div style="text-align:center;color:#aaa;font-size:11px;margin-top:8px;">V 1.0.53</div>
     </div>
   </div>
 </div>
@@ -906,7 +921,7 @@ textarea.med-form-input { font-family:inherit; }
     </div>
 
     <div style="text-align:center;font-size:10px;color:#b0b8cc;margin-top:10px;font-weight:500">
-      V 1.0.52 · Deportiva Francesa 1913
+      V 1.0.53 · Deportiva Francesa 1913
     </div>
 
   </div>
@@ -4073,7 +4088,7 @@ function addVisitor() {
     return;
   }
   const id = ++fixVisitorCounter;
-  fixState.visitors.push({ id, name: '', count: 1 });
+  fixState.visitors.push({ id, name: '', count: 1, conflicts: new Set(), expanded: false });
   renderVisitors();
 }
 
@@ -4089,22 +4104,95 @@ function renderVisitors() {
     document.getElementById('fix-add-visitor-btn').style.display = 'block';
     return;
   }
-  el.innerHTML = fixState.visitors.map(v =>
-    '<div class="fix-visitor-row">' +
-    '<input class="fix-visitor-name" type="text" placeholder="Nombre del club" ' +
-      'value="' + v.name + '" onchange="updateVisitor(' + v.id + ', \'name\', this.value)">' +
-    '<input class="fix-visitor-count" type="number" min="1" max="8" value="' + v.count + '" ' +
-      'onchange="updateVisitor(' + v.id + ', \'count\', parseInt(this.value)||1)">' +
-    '<button class="fix-visitor-del" onclick="removeVisitor(' + v.id + ')">×</button>' +
-    '</div>'
-  ).join('');
+  el.innerHTML = fixState.visitors.map(v => {
+    // Main row
+    const hasMultiple = v.count > 1;
+    const activeClass = (hasMultiple && v.expanded) ? ' active' : '';
+    const conflictCount = v.conflicts ? v.conflicts.size : 0;
+    const conflictLabel = '⚙' + (conflictCount > 0 ? ' ' + conflictCount : '');
+    const conflictBtn = hasMultiple
+      ? '<button class="fix-conflict-btn' + activeClass + '" onclick="toggleConflictPanel(' + v.id + ')">' + conflictLabel + '</button>'
+      : '';
+
+    let html = '<div class="fix-visitor-row" id="fix-vrow-' + v.id + '">' +
+      '<input class="fix-visitor-name" type="text" placeholder="Nombre del club" ' +
+        'value="' + v.name + '" onchange="updateVisitor(' + v.id + ', \'name\', this.value)">' +
+      '<input class="fix-visitor-count" type="number" min="1" max="8" value="' + v.count + '" ' +
+        'onchange="updateVisitor(' + v.id + ', \'count\', parseInt(this.value)||1)">' +
+      conflictBtn +
+      '<button class="fix-visitor-del" onclick="removeVisitor(' + v.id + ')">×</button>' +
+      '</div>';
+
+    // Conflict panel (only when expanded and count > 1)
+    if (hasMultiple && v.expanded) {
+      const pairs = [];
+      for (let i = 0; i < v.count; i++) {
+        for (let j = i + 1; j < v.count; j++) {
+          const idA = 'vis_' + v.id + '_' + i;
+          const idB = 'vis_' + v.id + '_' + j;
+          const key = idA + '|' + idB;
+          const labelA = v.name ? (v.name + ' ' + (i + 1)) : ('Equipo ' + (i + 1));
+          const labelB = v.name ? (v.name + ' ' + (j + 1)) : ('Equipo ' + (j + 1));
+          const checked = v.conflicts && v.conflicts.has(key) ? ' checked' : '';
+          pairs.push(
+            '<div class="fix-conflict-pair">' +
+            '<input type="checkbox"' + checked + ' onchange="toggleConflictPair(' + v.id + ', \'' + key + '\', this.checked)">' +
+            '<span>' + labelA + ' y ' + labelB + ' no juegan simultáneo</span>' +
+            '</div>'
+          );
+        }
+      }
+      html += '<div class="fix-conflict-panel">' + pairs.join('') + '</div>';
+    }
+
+    return html;
+  }).join('');
+
   document.getElementById('fix-add-visitor-btn').style.display =
     fixState.visitors.length >= 8 ? 'none' : 'block';
 }
 
 function updateVisitor(id, field, value) {
   const v = fixState.visitors.find(v => v.id === id);
-  if (v) v[field] = value;
+  if (!v) return;
+  v[field] = value;
+  // If count changed, clean up conflicts that reference indices now out of range
+  if (field === 'count') {
+    if (v.conflicts) {
+      const newConflicts = new Set();
+      v.conflicts.forEach(key => {
+        const [idA, idB] = key.split('|');
+        const iA = parseInt(idA.split('_').pop());
+        const iB = parseInt(idB.split('_').pop());
+        if (iA < value && iB < value) newConflicts.add(key);
+      });
+      v.conflicts = newConflicts;
+    }
+    // Collapse panel if count drops to 1
+    if (value <= 1) v.expanded = false;
+    renderVisitors();
+  }
+}
+
+function toggleConflictPanel(id) {
+  const v = fixState.visitors.find(v => v.id === id);
+  if (!v) return;
+  v.expanded = !v.expanded;
+  renderVisitors();
+}
+
+function toggleConflictPair(id, key, checked) {
+  const v = fixState.visitors.find(v => v.id === id);
+  if (!v) return;
+  if (!v.conflicts) v.conflicts = new Set();
+  if (checked) v.conflicts.add(key);
+  else v.conflicts.delete(key);
+  // Update button label without full re-render to avoid losing focus
+  const btn = document.querySelector('#fix-vrow-' + id + ' .fix-conflict-btn');
+  if (btn) {
+    const count = v.conflicts.size;
+    btn.textContent = '⚙' + (count > 0 ? ' ' + count : '');
+  }
 }
 
 // ── GENERATE FIXTURE ──────────────────────────────────────
@@ -4184,6 +4272,16 @@ function generateFixture() {
       }
     }
   }
+
+  // Add visitor conflict pairs configured by the user
+  fixState.visitors.forEach(v => {
+    if (!v.conflicts) return;
+    v.conflicts.forEach(key => {
+      const [idA, idB] = key.split('|');
+      conflictPairs.add(idA + '|' + idB);
+      conflictPairs.add(idB + '|' + idA);
+    });
+  });
 
   // Build and schedule fixture
   const schedule = buildFixture({
