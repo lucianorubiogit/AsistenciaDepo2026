@@ -7087,11 +7087,10 @@ async function apiSaveAttendance(payload) {
   const { attendance, date, sheetName } = payload;
   if (!attendance || attendance.length === 0) return { ok: true, saved: 0 };
 
-  // Use the date from payload, or derive from sheetName
   const fecha = date || payload.fecha;
   if (!fecha) return { ok: false, error: 'Falta la fecha' };
 
-  const div = currentDivision() || 'M13';
+  const div  = currentDivision() || 'M13';
   const rows = attendance.map(a => ({
     jugador_id: a.row,
     fecha:      fecha,
@@ -7100,6 +7099,39 @@ async function apiSaveAttendance(payload) {
   }));
 
   await supaUpsert('asistencia', rows, 'jugador_id,fecha');
+
+  // ── Auto-sync TEP ──────────────────────────────────────
+  // Si la fecha es lunes (1), jueves (4) o sábado (6), generar TEP automáticamente
+  const dow          = new Date(fecha + 'T12:00:00').getDay();
+  const esEnt        = dow === 1 || dow === 4;
+  const esPart       = dow === 6;
+
+  if (esEnt || esPart) {
+    const tipo    = esPart ? 'partido' : 'entrenamiento';
+    const minutos = esPart ? 60 : 90;
+
+    // Solo los jugadores que están Presentes generan TEP
+    const presentes = attendance.filter(a => normalizeEstado(a.state) === 'Presente');
+    if (presentes.length > 0) {
+      const tepRows = presentes.map(a => ({
+        jugador_id: a.row,
+        fecha:      fecha,
+        tipo:       tipo,
+        minutos:    minutos,
+        division:   div
+      }));
+      try {
+        await fetch(SUPA_URL + '/tep', {
+          method:  'POST',
+          headers: { ...SUPA_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+          body:    JSON.stringify(tepRows)
+        });
+      } catch(e) {
+        console.warn('TEP auto-sync error:', e);
+      }
+    }
+  }
+
   return { ok: true, saved: rows.length };
 }
 
